@@ -1,6 +1,6 @@
 using UnityEditor;
 using UnityEngine;
-using static FEasyUIMask;
+using FEasyUIMask;
 
 [CustomEditor(typeof(FEasyUIMask))]
 public class FEasyUIMaskEditor : Editor
@@ -72,11 +72,11 @@ public class FEasyUIMaskEditor : Editor
                 EditorGUILayout.Space();
 
                 PropertyField("areaSelectMode", "Target Area Select Mode");
-                var mode = (AreaSelectMode)serializedObject.FindProperty("areaSelectMode").enumValueIndex;
+                var mode = (FEasyUIMask.AreaSelectMode)serializedObject.FindProperty("areaSelectMode").enumValueIndex;
 
                 EditorGUILayout.Space();
 
-                if (mode == AreaSelectMode.Manual)
+                if (mode == FEasyUIMask.AreaSelectMode.Manual)
                 {
                     bool newEditing = GUILayout.Toggle(isEditingArea, editButtonContent, "Button");
                     if (newEditing != isEditingArea)
@@ -108,7 +108,7 @@ public class FEasyUIMaskEditor : Editor
         HandleUtility.AddDefaultControl(GUIUtility.GetControlID(FocusType.Passive));
 
         var script = target as FEasyUIMask;
-        if (!script || script.areaSelectMode != AreaSelectMode.Manual) return;
+        if (!script || script.areaSelectMode != FEasyUIMask.AreaSelectMode.Manual) return;
 
         RectTransform rt = script.rectTransform;
         Vector2 offset = script.targetOffset;

@@ -4,6 +4,8 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
 
+namespace FEasyUIMask
+{
 [AddComponentMenu("UI/F_Easy UI Mask")]
 [RequireComponent(typeof(CanvasRenderer))]
 public class FEasyUIMask : MaskableGraphic, ICanvasRaycastFilter
@@ -231,4 +233,5 @@ public class FEasyUIMask : MaskableGraphic, ICanvasRaycastFilter
     {
         gameObject.SetActive(false);
     }
+}
 }
