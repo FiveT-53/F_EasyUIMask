@@ -20,29 +20,39 @@ Simplifies UI mask configuration. Supports configurable forward/inverted rectang
 
 ## Requirements
 
-- Unity 2019.4 or higher
+- 团结引擎 1.8.4+ / Unity 2019.4+
+- `.meta` files are engine-specific. Make sure to install from the correct branch for your engine.
+
+> [!NOTE]
+> GUIDs are **not compatible** between Unity and 团结引擎. Always install from the correct branch for your engine.
 
 ## Installation
 
-### Via Unity Package Manager (UPM)
+### Via Package Manager (UPM)
 
 1. Open `Window > Package Manager`
 2. Click `+` in the top-left corner → `Add package from git URL`
-3. Paste the following URL:
+3. Paste the URL for your engine:
+
+| Engine | Branch | Install URL |
+|--------|--------|-------------|
+| 团结引擎 | `tuanjie` | `https://github.com/FiveT-53/F_EasyUIMask.git#tuanjie` |
+| Unity | `unity` | `https://github.com/FiveT-53/F_EasyUIMask.git#unity` |
+
+> If no branch is specified, the default (`main`) branch contains source code without `.meta` files and is not directly installable.
+
+### Via Git URL with Version
+
+You can also pin to a specific version tag:
 
 ```
-https://github.com/FiveT-53/F_EasyUIMask.git
-```
-
-### Via Git URL (Unity 2019.3+)
-
-```
-https://github.com/FiveT-53/F_EasyUIMask.git#1.0.0
+https://github.com/FiveT-53/F_EasyUIMask.git#v1.0.0-tuanjie
+https://github.com/FiveT-53/F_EasyUIMask.git#v1.0.0-unity
 ```
 
 ### Manual
 
-Copy the `FEasyUIMask` folder into your project's `Assets` folder.
+If installing manually, download the branch for your engine and copy the `FEasyUIMask` folder into your project's `Assets` folder.
 
 ## Quick Start
 
@@ -51,7 +61,7 @@ Copy the `FEasyUIMask` folder into your project's `Assets` folder.
    - **Manual**: Adjust `Offset` and `Size`, use the Scene `Edit Area` button to edit visually
    - **UITarget**: Drag a target RectTransform into the `Target` field
 3. Toggle `Invert Mask` to switch between forward and inverted modes
-4. Call `RefreshMask()` from code when you want to manually update the mask area, you need to call the first time before `Real-time Update` (if you have selected)
+4. Call `RefreshMask()` from code when you want to manually update the mask area, you need to call `RefreshMask()` for the first time before `Real-time Update` (if you have selected)
 
 ```csharp
 // Refresh from code
