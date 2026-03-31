@@ -19,5 +19,10 @@
         "type": "git",
         "url": "https://github.com/FiveT-53/F_EasyUIMask.git"
     },
-    "dependencies": {}
+    "dependencies": {},
+    "exclude": [
+        "README.md",
+        "LICENSE",
+        "CHANGELOG.md"
+    ]
 }
