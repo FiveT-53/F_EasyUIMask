@@ -20,10 +20,12 @@ public class FEasyUIMaskEditor : Editor
     {
         SceneView.duringSceneGui += OnScene;
 
-        Texture2D icon = AssetDatabase.LoadAssetByGUID<Texture>(k_IconGUID);
-        if(icon != null)
+        string iconPath = AssetDatabase.GUIDToAssetPath(k_IconGUID);
+        if (!string.IsNullOrEmpty(iconPath))
         {
-            EditorGUIUtility.SetIconForObject(target, icon);
+            Texture2D icon = AssetDatabase.LoadAssetAtPath<Texture2D>(iconPath);
+            if (icon != null)
+                EditorGUIUtility.SetIconForObject(target, icon);
         }
     }
 
