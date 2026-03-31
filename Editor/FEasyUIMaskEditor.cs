@@ -13,20 +13,9 @@ public class FEasyUIMaskEditor : Editor
     private bool isEditingArea;
     private static readonly GUIContent editButtonContent = new GUIContent("Edit Area", "Edit mask area");
 
-    [Tooltip("Resources")]
-    const string k_IconGUID = "BnsftC77AXl7eybUv3/IY4nGpgBOiO9RzYDRbmfNo5T217TfQMjAsw4=";
-
     void OnEnable()
     {
         SceneView.duringSceneGui += OnScene;
-
-        string iconPath = AssetDatabase.GUIDToAssetPath(k_IconGUID);
-        if (!string.IsNullOrEmpty(iconPath))
-        {
-            Texture2D icon = AssetDatabase.LoadAssetAtPath<Texture2D>(iconPath);
-            if (icon != null)
-                EditorGUIUtility.SetIconForObject(target, icon);
-        }
     }
 
     void OnDisable()
