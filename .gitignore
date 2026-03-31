@@ -1,0 +1,60 @@
+# Unity
+/[Ll]ibrary/
+/[Tt]emp/
+/[Oo]bj/
+/[Bb]uild/
+/[Bb]uilds/
+/[Ll]ogs/
+/[Uu]ser[Ss]ettings/
+
+# .meta files (uncomment if you want to ignore all .meta files)
+# *.meta
+
+# But keep .meta files for important assets (uncomment to override)
+# !Assets/**/*.meta
+
+# Visual Studio / Rider
+.vs/
+*.user
+*.userosscache
+*.sln.docstates
+*.suo
+*.cache
+*.opensdf
+*.opendb
+*.DotSettings.user
+
+# JetBrains Rider
+.idea/
+*.sln.iml
+
+# VS Code
+.vscode/
+
+# Mac
+.DS_Store
+.AppleDouble
+.LSOverride
+._*
+
+# Thumbnails
+Thumbs.db
+Desktop.ini
+
+# Package data
+*.unitypackage
+*.nupkg
+
+# Build results
+*.apk
+*.aab
+*.unityproj
+*.dll
+*.exe
+*.app
+*.ipa
+*.mdb
+*.pdb
+
+# Crash reports
+crashpadreports/
