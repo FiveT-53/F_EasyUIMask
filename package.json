@@ -1,0 +1,23 @@
+{
+    "name": "com.fivet.feasyuimask",
+    "displayName": "F_Easy UI Mask",
+    "version": "1.0.0",
+    "description": "Simplifies UI mask configuration. Supports configurable forward/inverted rectangular mask with two area selection modes: manual and target UI reference.",
+    "keywords": [
+        "ui",
+        "mask",
+        "guide",
+        "tutorial",
+        "highlight"
+    ],
+    "category": "UI",
+    "author": {
+        "name": "FiveT五三",
+        "email": "LuoK_53@outlook.com"
+    },
+    "repository": {
+        "type": "git",
+        "url": "https://github.com/YourGitHubUsername/F_EasyUIMask.git"
+    },
+    "dependencies": {}
+}
