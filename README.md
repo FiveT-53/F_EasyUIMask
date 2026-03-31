@@ -1,5 +1,7 @@
 # F_Easy UI Mask
 
+> 🏠 **English**: [README_en.md](README_en.md)
+
 简化 UI 遮罩配置。支持配置正反向的矩形遮罩，提供两种区域选择模式：手动模式和目标 UI 模式。
 
 ## 功能特点

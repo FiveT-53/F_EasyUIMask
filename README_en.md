@@ -1,6 +1,8 @@
 # F_Easy UI Mask
 
-Simplifies UI mask configuration. Supports configurable forward/inverted rectangular mask with two area selection modes: manual and target UI reference.
+> 🏠 **中文**: [README.md](README.md)
+
+Simplifies UI mask configuration. Supports configurable forward/inverted rectangular mask and two area selection modes: manual and target UI reference.
 
 
 ## Features
