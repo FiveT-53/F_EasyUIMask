@@ -4,7 +4,7 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
 
-namespace FEasyUIMask
+namespace F_EasyUIMask
 {
 [AddComponentMenu("UI/F_Easy UI Mask")]
 [RequireComponent(typeof(CanvasRenderer))]
