@@ -31,18 +31,18 @@ Simplifies UI mask configuration. Supports configurable forward/inverted rectang
 3. Paste the following URL:
 
 ```
-https://github.com/YourGitHubUsername/F_EasyUIMask.git?path=Assets/FEasyUIMask
+https://github.com/FiveT-53/F_EasyUIMask.git
 ```
 
 ### Via Git URL (Unity 2019.3+)
 
 ```
-https://github.com/YourGitHubUsername/F_EasyUIMask.git#1.0.0
+https://github.com/FiveT-53/F_EasyUIMask.git#1.0.0
 ```
 
 ### Manual
 
-Copy the `Assets/FEasyUIMask` folder into your project's `Assets` folder.
+Copy the `FEasyUIMask` folder into your project's `Assets` folder.
 
 ## Quick Start
 
