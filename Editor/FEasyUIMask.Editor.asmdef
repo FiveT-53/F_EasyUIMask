@@ -2,7 +2,8 @@
     "name": "FEasyUIMask.Editor",
     "rootNamespace": "F_EasyUIMask",
     "references": [
-        "FEasyUIMask"
+        "FEasyUIMask",
+        "UnityEngine.UI"
     ],
     "includePlatforms": [
         "Editor"
