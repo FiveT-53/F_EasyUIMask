@@ -90,6 +90,10 @@ UITarget 的 Camera / World Space 根 Canvas 必须明确设置 `worldCamera`；
 
 运行时辅助 `TargetArea` 由 owner 标记识别；同名用户对象不会被认领、迁移或删除。生成区域若被移走、添加子节点或其他组件，将被保留并提示。显示和点击不依赖该辅助对象。
 
+在 Inspector 修改参数、拖动手柄、重新选择对象或 Undo/Redo 后，编辑器会合并请求并刷新区域。Manual 只有开启 `Edit Area` 才占用编辑输入；Escape 退出，Alt 和 View 工具保持导航。暂不支持多对象区域编辑。手柄和 Inspector 使用同一套可撤销序列化提交。
+
+`Refresh Preview` 不激活 inactive 对象，也不启用组件。编辑模式和 Prefab Stage 只更新非序列化缓存，不创建辅助对象或修改资产本体；跨 Stage 目标拒绝预览。Play Mode 的场景实例走不激活宿主的运行时刷新。编辑模式下，选中遮罩且开启实时更新时持续检查；关闭时，目标位置或摄像机变化后请手动刷新预览。
+
 ## API 参考
 
 ### 公共属性
