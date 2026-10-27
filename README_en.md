@@ -70,12 +70,18 @@ Commit shared source changes on `main`, then synchronize them to `unity` and `tu
    - **Manual**: Adjust `Offset` and `Size`, use the Scene `Edit Area` button to edit visually
    - **UITarget**: Drag a target RectTransform into the `Target` field
 3. Toggle `Invert Mask` to switch between forward and inverted modes
-4. Call `RefreshMask()` from code when you want to manually update the mask area, you need to call `RefreshMask()` for the first time before `Real-time Update` (if you have selected)
+4. In Play Mode, an active, enabled component attempts its first refresh in a subsequent `LateUpdate`, even with `Real-time Update` disabled. Call `RefreshMask()` to commit later target, size or inversion changes, or enable `Real-time Update` to check for changes each frame.
 
 ```csharp
 // Refresh from code
 mask.GetComponent<F_EasyUIMask>().RefreshMask();
 ```
+
+`RefreshMask()` may activate the mask GameObject itself, but does not activate its parent or enable a disabled component. Every valid explicit refresh requests vertex rebuilding; rendering takes effect during the normal Canvas rebuild. With real-time updates disabled, field assignments preserve the previous committed bounds and inversion mode until an explicit refresh or a structural change triggers another refresh. For targets driven by automatic layout, refresh explicitly after layout finishes.
+
+Migration: `Awake()` / `Init()` no longer hide the entire GameObject. Set the object initially inactive if your code relies on it starting hidden. A detected missing Canvas, target or required camera clears only this component's rendering and hit state, leaving the host active. Real-time updates can recover when configuration becomes valid. With real-time updates disabled, a failed request is consumed; explicitly refresh or wait for a new enable, parent or Canvas hierarchy event.
+
+The current staged repair includes the shared state and refresh skeleton. Four-corner target projection, non-center pivots, out-of-bounds meshes and helper ownership recovery across domain reloads remain for later batches. Edit-mode preview refresh will be connected in the editor batch.
 
 ## API Reference
 
