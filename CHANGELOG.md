@@ -8,6 +8,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ### Fixed
 
+- Clipped forward and inverted meshes to the real outer rect, using non-overlapping quads and the same closed-boundary intersection for raycasts.
+- Added serialized helper ownership, reload recovery and conservative cleanup that preserves user content and unowned objects.
 - Converted target world corners through both root Canvas cameras into mask-local bounds, with explicit projection validation.
 - Made Manual offsets and outer geometry respect the mask pivot, with per-axis negative-size normalization.
 - Declared the Unity UI 1.0.0 package dependency and explicit Runtime/Editor references to `UnityEngine.UI`.
@@ -15,10 +17,14 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Added a shared committed bounds/inversion state, explicit versus automatic refresh paths, exact change detection and failure invalidation without deactivating the host.
 - Scheduled a first refresh on enable, preserved requests raised during refresh, and guarded refresh reentry and initialization when a Canvas is missing. Initialization no longer hides the GameObject.
 
+### Added
+
+- Public `Close()` invalidates state and deactivates the host without resetting configuration.
+
 ### Changed
 
 - Active components now attempt their first runtime refresh automatically, even with real-time updates disabled. Initialize the GameObject as inactive when it must start hidden.
-- Rendering and raycast filtering read committed state rather than live configuration or helper existence. Geometry clipping, target projection and serialized helper ownership are still pending in the staged repair.
+- Rendering and raycast filtering read committed state rather than live configuration or helper existence.
 
 ### Documentation
 
