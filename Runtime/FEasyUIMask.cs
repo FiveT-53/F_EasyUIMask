@@ -18,6 +18,8 @@ public class FEasyUIMask : MaskableGraphic, ICanvasRaycastFilter
     private string _lastFailure;
     private Object _lastFailureContext;
     private readonly Vector3[] _worldCorners = new Vector3[4];
+    private bool _reportedUnownedArea;
+    private bool _reportedProtectedArea;
 
     public enum AreaSelectMode
     {
@@ -51,16 +53,84 @@ public class FEasyUIMask : MaskableGraphic, ICanvasRaycastFilter
 
     private void EnsureInitialized()
     {
-        // Never claim a user object by name. Serialized ownership recovery is finished in batch 4.
-        if (_targetArea != null && _targetArea.parent == transform && _targetArea.childCount == 0)
+        if (IsOwnedArea(_targetArea) && IsSafeArea(_targetArea))
             return;
 
+        if (_targetArea != null)
+            ReportProtectedArea();
         _targetArea = null;
-        GameObject area = new GameObject("TargetArea", typeof(RectTransform), typeof(LayoutElement));
+        for (int i = 0; i < transform.childCount; i++)
+        {
+            Transform child = transform.GetChild(i);
+            RectTransform rect = child as RectTransform;
+            if (IsOwnedArea(rect))
+            {
+                if (IsSafeArea(rect))
+                    _targetArea = rect;
+                else
+                    ReportProtectedArea();
+            }
+            else if (child.name == "TargetArea" && !_reportedUnownedArea)
+            {
+                _reportedUnownedArea = true;
+                Debug.LogWarning("FEasyUIMask: an unowned TargetArea was left untouched; a separate owned helper will be used.", this);
+            }
+        }
+        if (_targetArea != null)
+            return;
+
+        GameObject area = new GameObject("TargetArea", typeof(RectTransform), typeof(LayoutElement), typeof(FEasyUIMaskTargetArea));
         area.transform.SetParent(transform, false);
         area.layer = gameObject.layer;
+        area.GetComponent<FEasyUIMaskTargetArea>().Owner = this;
         area.GetComponent<LayoutElement>().ignoreLayout = true;
         _targetArea = (RectTransform)area.transform;
+    }
+
+    private bool IsOwnedArea(RectTransform area)
+    {
+        if (area == null || area.parent != transform)
+            return false;
+        FEasyUIMaskTargetArea marker = area.GetComponent<FEasyUIMaskTargetArea>();
+        return marker != null && marker.Owner == this;
+    }
+
+    private static bool IsSafeArea(RectTransform area)
+    {
+        if (area.childCount != 0)
+            return false;
+        foreach (Component component in area.GetComponents<Component>())
+        {
+            if (!(component is RectTransform) && !(component is LayoutElement) && !(component is FEasyUIMaskTargetArea))
+                return false;
+        }
+        return true;
+    }
+
+    private void ReportProtectedArea()
+    {
+        if (_reportedProtectedArea)
+            return;
+        _reportedProtectedArea = true;
+        Debug.LogWarning("FEasyUIMask: a helper was moved or contains user content and has been left untouched.", this);
+    }
+
+    protected override void OnDestroy()
+    {
+        if (IsPlayingObject())
+        {
+            for (int i = 0; i < transform.childCount; i++)
+            {
+                RectTransform area = transform.GetChild(i) as RectTransform;
+                if (!IsOwnedArea(area))
+                    continue;
+                if (IsSafeArea(area))
+                    Destroy(area.gameObject);
+                else
+                    ReportProtectedArea();
+            }
+        }
+        base.OnDestroy();
     }
 
     protected override void OnEnable()
@@ -270,7 +340,8 @@ public class FEasyUIMask : MaskableGraphic, ICanvasRaycastFilter
         size = new Vector2(Mathf.Max(0, size.x), Mathf.Max(0, size.y));
         min = offset - size * 0.5f;
         max = offset + size * 0.5f;
-        return IsFinite(min.x) && IsFinite(min.y) && IsFinite(max.x) && IsFinite(max.y);
+        return IsFinite(min.x) && IsFinite(min.y) && IsFinite(max.x) && IsFinite(max.y)
+            && IsFinite(max.x - min.x) && IsFinite(max.y - min.y);
     }
 
     private static bool HasInvertibleTransform(RectTransform rect)
@@ -317,6 +388,12 @@ public class FEasyUIMask : MaskableGraphic, ICanvasRaycastFilter
 
     private void UpdateTargetArea(Vector2 min, Vector2 max)
     {
+        if (!IsOwnedArea(_targetArea) || !IsSafeArea(_targetArea))
+        {
+            ReportProtectedArea();
+            _targetArea = null;
+            return;
+        }
         _targetArea.anchorMin = _targetArea.anchorMax = rectTransform.pivot;
         _targetArea.pivot = new Vector2(0.5f, 0.5f);
         _targetArea.localRotation = Quaternion.identity;
@@ -375,61 +452,75 @@ public class FEasyUIMask : MaskableGraphic, ICanvasRaycastFilter
         if (!RectTransformUtility.ScreenPointToLocalPointInRectangle(rectTransform, screenPoint, eventCamera, out localPoint))
             return false;
 
-        // Outer clipping and boundary cases are integrated with the mesh in batch 4.
-        bool inTarget = _targetMax.x > _targetMin.x && _targetMax.y > _targetMin.y
-            && localPoint.x >= _targetMin.x && localPoint.x <= _targetMax.x
-            && localPoint.y >= _targetMin.y && localPoint.y <= _targetMax.y;
+        Rect outer = rectTransform.rect;
+        if (!IsUsableOuter(outer) || !IsFinite(localPoint.x) || !IsFinite(localPoint.y) || !ContainsClosed(outer, localPoint))
+            return false;
+        Rect intersection;
+        bool inTarget = TryGetIntersection(outer, _targetMin, _targetMax, out intersection)
+            && ContainsClosed(intersection, localPoint);
         return _appliedInvertMask ? !inTarget : inTarget;
     }
 
-    /// <summary>
-    /// Update Vertex Data When Rendering
-    /// </summary>
+    private static bool IsUsableOuter(Rect outer)
+    {
+        return IsFinite(outer.xMin) && IsFinite(outer.yMin) && IsFinite(outer.xMax) && IsFinite(outer.yMax)
+            && IsFinite(outer.width) && IsFinite(outer.height) && outer.width > 0 && outer.height > 0;
+    }
+
+    private static bool TryGetIntersection(Rect outer, Vector2 min, Vector2 max, out Rect intersection)
+    {
+        float xMin = Mathf.Max(outer.xMin, min.x);
+        float yMin = Mathf.Max(outer.yMin, min.y);
+        float xMax = Mathf.Min(outer.xMax, max.x);
+        float yMax = Mathf.Min(outer.yMax, max.y);
+        intersection = Rect.MinMaxRect(xMin, yMin, xMax, yMax);
+        return xMax > xMin && yMax > yMin;
+    }
+
+    private static bool ContainsClosed(Rect rect, Vector2 point)
+    {
+        return point.x >= rect.xMin && point.x <= rect.xMax && point.y >= rect.yMin && point.y <= rect.yMax;
+    }
+
     protected override void OnPopulateMesh(VertexHelper toFill)
     {
         toFill.Clear();
-        if (!_hasAppliedState)
+        Rect outer = rectTransform.rect;
+        if (!_hasAppliedState || !IsUsableOuter(outer))
             return;
 
-        var maskRect = rectTransform.rect;
-
-        var maskRectLeftTop = new Vector2(maskRect.xMin, maskRect.yMax);
-        var maskRectLeftBottom = new Vector2(maskRect.xMin, maskRect.yMin);
-        var maskRectRightTop = new Vector2(maskRect.xMax, maskRect.yMax);
-        var maskRectRightBottom = new Vector2(maskRect.xMax, maskRect.yMin);
-
-        var targetRectLeftTop = new Vector2(_targetMin.x, _targetMax.y);
-        var targetRectLeftBottom = _targetMin;
-        var targetRectRightTop = _targetMax;
-        var targetRectRightBottom = new Vector2(_targetMax.x, _targetMin.y);
-
-        //Add Point(0~7)
-        toFill.AddVert(maskRectLeftBottom, color, Vector2.zero);    //0
-        toFill.AddVert(targetRectLeftBottom, color, Vector2.zero);  //1
-        toFill.AddVert(targetRectRightBottom, color, Vector2.zero); //2
-        toFill.AddVert(maskRectRightBottom, color, Vector2.zero);   //3
-        toFill.AddVert(targetRectRightTop, color, Vector2.zero);    //4
-        toFill.AddVert(maskRectRightTop, color, Vector2.zero);      //5
-        toFill.AddVert(targetRectLeftTop, color, Vector2.zero);     //6
-        toFill.AddVert(maskRectLeftTop, color, Vector2.zero);       //7
-
-        if (_appliedInvertMask)
+        Rect intersection;
+        bool hasIntersection = TryGetIntersection(outer, _targetMin, _targetMax, out intersection);
+        if (!_appliedInvertMask)
         {
-            toFill.AddTriangle(0, 1, 2);
-            toFill.AddTriangle(2, 3, 0);
-            toFill.AddTriangle(3, 2, 4);
-            toFill.AddTriangle(4, 5, 3);
-            toFill.AddTriangle(6, 7, 5);
-            toFill.AddTriangle(5, 4, 6);
-            toFill.AddTriangle(7, 6, 1);
-            toFill.AddTriangle(1, 0, 7);          
+            if (hasIntersection)
+                AddQuad(toFill, intersection.xMin, intersection.yMin, intersection.xMax, intersection.yMax);
+            return;
         }
-        else
+        if (!hasIntersection)
         {
-            toFill.AddTriangle(1, 4, 2);
-            toFill.AddTriangle(1, 6, 4);
+            AddQuad(toFill, outer.xMin, outer.yMin, outer.xMax, outer.yMax);
+            return;
         }
 
+        // Top/bottom span the outer width; left/right span only the hole height.
+        AddQuad(toFill, outer.xMin, outer.yMin, outer.xMax, intersection.yMin);
+        AddQuad(toFill, outer.xMin, intersection.yMax, outer.xMax, outer.yMax);
+        AddQuad(toFill, outer.xMin, intersection.yMin, intersection.xMin, intersection.yMax);
+        AddQuad(toFill, intersection.xMax, intersection.yMin, outer.xMax, intersection.yMax);
+    }
+
+    private void AddQuad(VertexHelper vertices, float xMin, float yMin, float xMax, float yMax)
+    {
+        if (xMax <= xMin || yMax <= yMin)
+            return;
+        int first = vertices.currentVertCount;
+        vertices.AddVert(new Vector3(xMin, yMin, 0), color, Vector2.zero);
+        vertices.AddVert(new Vector3(xMin, yMax, 0), color, Vector2.zero);
+        vertices.AddVert(new Vector3(xMax, yMax, 0), color, Vector2.zero);
+        vertices.AddVert(new Vector3(xMax, yMin, 0), color, Vector2.zero);
+        vertices.AddTriangle(first, first + 1, first + 2);
+        vertices.AddTriangle(first + 2, first + 3, first);
     }
 
     void LateUpdate()
@@ -439,7 +530,8 @@ public class FEasyUIMask : MaskableGraphic, ICanvasRaycastFilter
             RefreshMaskInternal(false, false);
     }
 
-    private void Close()
+    /// <summary>Invalidates the mask and deactivates its GameObject without clearing configuration.</summary>
+    public void Close()
     {
         InvalidateAppliedState(true);
         gameObject.SetActive(false);

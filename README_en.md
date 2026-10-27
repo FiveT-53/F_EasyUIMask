@@ -87,6 +87,10 @@ Manual `targetOffset` is relative to the mask pivot and sizes use local UI units
 
 UITarget Camera / World Space root canvases require an explicit `worldCamera`; Overlay uses no camera. Both sides must use the same display; individual camera viewports are supported. RenderTexture, stereo cameras and targets crossing camera clipping planes are unsupported. World Space follows the chosen observer only, without simultaneous multi-view alignment. Manual local calculations do not require a camera.
 
+Forward mode draws and blocks the intersection of the target and the mask's outer rect. Inverted mode draws and blocks the rest of the outer rect; the hole and its boundary pass through. An entirely outside or zero-size Manual target gives an empty forward mask and a full inverted mask; a target covering the outer rect gives the reverse. Points outside the outer rect never hit. `raycastTarget=false` removes this Graphic as a raycast target without guaranteeing that other UI or descendants pass through.
+
+Runtime `TargetArea` helpers are identified by an owner marker. User objects with the same name are never claimed, migrated or deleted. Helpers moved elsewhere or containing user children or additional components are preserved with a warning. Rendering and hit testing do not depend on the helper.
+
 ## API Reference
 
 ### Public Properties
