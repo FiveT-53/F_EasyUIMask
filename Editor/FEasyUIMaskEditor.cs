@@ -10,6 +10,7 @@ public class FEasyUIMaskEditor : Editor
     private bool showGraphic = true;
     private bool showMaskArea = true;
     private bool isEditingArea;
+    private int ownedHotControl;
     private readonly Vector3[] corners = new Vector3[4];
     internal FEasyUIMask Mask { get { return target as FEasyUIMask; } }
 
@@ -27,6 +28,14 @@ public class FEasyUIMaskEditor : Editor
     internal void EndEditing()
     {
         isEditingArea = false;
+        ReleaseOwnedControl();
+    }
+
+    private void ReleaseOwnedControl()
+    {
+        if (ownedHotControl != 0 && GUIUtility.hotControl == ownedHotControl)
+            GUIUtility.hotControl = 0;
+        ownedHotControl = 0;
     }
 
     public override void OnInspectorGUI()
@@ -67,7 +76,10 @@ public class FEasyUIMaskEditor : Editor
                     bool editing = GUILayout.Toggle(isEditingArea, "Edit Area", "Button");
                     if (editing != isEditingArea)
                     {
-                        isEditingArea = editing;
+                        if (editing)
+                            isEditingArea = true;
+                        else
+                            EndEditing();
                         SceneView.RepaintAll();
                     }
                     PropertyField("targetOffset", "Offset (from Pivot)");
@@ -140,15 +152,20 @@ public class FEasyUIMaskEditor : Editor
         {
             Handles.color = new Color(0, 1, 0.5f, 0.8f);
             Handles.DrawPolyLine(corners[0], corners[1], corners[2], corners[3], corners[0]);
-            if (!isEditingArea || current.alt || Tools.current == Tool.View)
+            if (!isEditingArea)
                 return;
+            if (current.alt || Tools.current == Tool.View)
+            {
+                ReleaseOwnedControl();
+                return;
+            }
             if (current.type == EventType.Layout)
                 HandleUtility.AddDefaultControl(GUIUtility.GetControlID("FEasyUIMaskArea".GetHashCode(), FocusType.Passive));
 
             bool changed = false;
             Vector3 centerWorld = rt.TransformPoint(offset.x, offset.y, 0);
             EditorGUI.BeginChangeCheck();
-            Vector3 newCenter = FreeMoveHandleCompat(centerWorld, HandleUtility.GetHandleSize(centerWorld) * 0.1f, Vector3.one, Handles.RectangleHandleCap);
+            Vector3 newCenter = FreeMoveHandleCompat(centerWorld, HandleUtility.GetHandleSize(centerWorld) * 0.1f, Vector3.one, Handles.RectangleHandleCap, 0);
             if (EditorGUI.EndChangeCheck())
             {
                 offset = rt.InverseTransformPoint(newCenter);
@@ -162,10 +179,10 @@ public class FEasyUIMaskEditor : Editor
             Vector3 left = rt.TransformPoint(min.x, offset.y, 0);
             Vector3 right = rt.TransformPoint(max.x, offset.y, 0);
             EditorGUI.BeginChangeCheck();
-            Vector3 newTop = FreeMoveHandleCompat(top, HandleUtility.GetHandleSize(top) * 0.08f, Vector3.one, Handles.SphereHandleCap);
-            Vector3 newBottom = FreeMoveHandleCompat(bottom, HandleUtility.GetHandleSize(bottom) * 0.08f, Vector3.one, Handles.SphereHandleCap);
-            Vector3 newLeft = FreeMoveHandleCompat(left, HandleUtility.GetHandleSize(left) * 0.08f, Vector3.one, Handles.SphereHandleCap);
-            Vector3 newRight = FreeMoveHandleCompat(right, HandleUtility.GetHandleSize(right) * 0.08f, Vector3.one, Handles.SphereHandleCap);
+            Vector3 newTop = FreeMoveHandleCompat(top, HandleUtility.GetHandleSize(top) * 0.08f, Vector3.one, Handles.SphereHandleCap, 1);
+            Vector3 newBottom = FreeMoveHandleCompat(bottom, HandleUtility.GetHandleSize(bottom) * 0.08f, Vector3.one, Handles.SphereHandleCap, 2);
+            Vector3 newLeft = FreeMoveHandleCompat(left, HandleUtility.GetHandleSize(left) * 0.08f, Vector3.one, Handles.SphereHandleCap, 3);
+            Vector3 newRight = FreeMoveHandleCompat(right, HandleUtility.GetHandleSize(right) * 0.08f, Vector3.one, Handles.SphereHandleCap, 4);
             if (EditorGUI.EndChangeCheck())
             {
                 float minX = Mathf.Min(rt.InverseTransformPoint(newLeft).x, rt.InverseTransformPoint(newRight).x);
@@ -195,13 +212,19 @@ public class FEasyUIMaskEditor : Editor
         return !float.IsNaN(value) && !float.IsInfinity(value);
     }
 
-    private static Vector3 FreeMoveHandleCompat(Vector3 position, float size, Vector3 snap, Handles.CapFunction cap)
+    private Vector3 FreeMoveHandleCompat(Vector3 position, float size, Vector3 snap, Handles.CapFunction cap, int hint)
     {
+        int controlId = GUIUtility.GetControlID(GetInstanceID() ^ hint, FocusType.Passive);
 #if UNITY_2022_3_OR_NEWER
-        return Handles.FreeMoveHandle(position, size, snap, cap);
+        Vector3 result = Handles.FreeMoveHandle(controlId, position, size, snap, cap);
 #else
-        return Handles.FreeMoveHandle(position, Quaternion.identity, size, snap, cap);
+        Vector3 result = Handles.FreeMoveHandle(controlId, position, Quaternion.identity, size, snap, cap);
 #endif
+        if (GUIUtility.hotControl == controlId)
+            ownedHotControl = controlId;
+        else if (ownedHotControl == controlId)
+            ownedHotControl = 0;
+        return result;
     }
 
     private void PropertyField(string name, string label)

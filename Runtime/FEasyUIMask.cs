@@ -15,6 +15,7 @@ public class FEasyUIMask : MaskableGraphic, ICanvasRaycastFilter
     private bool _pendingRefresh;
     private bool _pendingForceVertices;
     private bool _isRefreshing;
+    private bool _isInitializing;
     private string _lastFailure;
     private Object _lastFailureContext;
     private readonly Vector3[] _worldCorners = new Vector3[4];
@@ -37,7 +38,7 @@ public class FEasyUIMask : MaskableGraphic, ICanvasRaycastFilter
         return System.Threading.Interlocked.Exchange(ref _editorRefreshRequested, 0) != 0;
     }
 
-    /// <summary>Editor-only bridge. Never activates an object or creates preview resources.</summary>
+    /// <summary>Editor bridge: previews create no helpers; playing instances refresh without activation.</summary>
     public void RefreshEditorPreview(bool forceVertices, bool targetInSameStage)
     {
         if (!gameObject.scene.IsValid() || !gameObject.scene.isLoaded)
@@ -115,6 +116,7 @@ public class FEasyUIMask : MaskableGraphic, ICanvasRaycastFilter
         Init();
     }
 
+    /// <summary>Prepares owned runtime resources without showing or hiding the mask; safe before a Canvas exists.</summary>
     public void Init()
     {
         if (IsPlayingObject())
@@ -128,6 +130,21 @@ public class FEasyUIMask : MaskableGraphic, ICanvasRaycastFilter
     }
 
     private void EnsureInitialized()
+    {
+        if (_isInitializing)
+            return;
+        _isInitializing = true;
+        try
+        {
+            EnsureTargetArea();
+        }
+        finally
+        {
+            _isInitializing = false;
+        }
+    }
+
+    private void EnsureTargetArea()
     {
         if (IsOwnedArea(_targetArea) && IsSafeArea(_targetArea))
             return;
@@ -156,11 +173,12 @@ public class FEasyUIMask : MaskableGraphic, ICanvasRaycastFilter
             return;
 
         GameObject area = new GameObject("TargetArea", typeof(RectTransform), typeof(LayoutElement), typeof(FEasyUIMaskTargetArea));
-        area.transform.SetParent(transform, false);
+        _targetArea = (RectTransform)area.transform;
         area.layer = gameObject.layer;
         area.GetComponent<FEasyUIMaskTargetArea>().Owner = this;
         area.GetComponent<LayoutElement>().ignoreLayout = true;
-        _targetArea = (RectTransform)area.transform;
+        // Publish ownership before SetParent can invoke user hierarchy callbacks.
+        area.transform.SetParent(transform, false);
     }
 
     private bool IsOwnedArea(RectTransform area)
@@ -242,6 +260,7 @@ public class FEasyUIMask : MaskableGraphic, ICanvasRaycastFilter
         _pendingForceVertices |= forceVertices;
     }
 
+    /// <summary>Commits the current configuration and requests a mesh rebuild; may activate only this GameObject.</summary>
     public void RefreshMask()
     {
         RefreshMaskInternal(true, true);
