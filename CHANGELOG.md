@@ -10,6 +10,13 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 - Declared the Unity UI 1.0.0 package dependency and explicit Runtime/Editor references to `UnityEngine.UI`.
 - Routed all five Scene handles through a compatibility helper using the rotation overload on older versions and the modern overload on Unity 2022.3 or newer.
+- Added a shared committed bounds/inversion state, explicit versus automatic refresh paths, exact change detection and failure invalidation without deactivating the host.
+- Scheduled a first refresh on enable, preserved requests raised during refresh, and guarded refresh reentry and initialization when a Canvas is missing. Initialization no longer hides the GameObject.
+
+### Changed
+
+- Active components now attempt their first runtime refresh automatically, even with real-time updates disabled. Initialize the GameObject as inactive when it must start hidden.
+- Rendering and raycast filtering read committed state rather than live configuration or helper existence. Geometry clipping, target projection and serialized helper ownership are still pending in the staged repair.
 
 ### Documentation
 
