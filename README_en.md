@@ -1,120 +1,121 @@
 # F_Easy UI Mask
 
-> 🏠 **中文**: [README.md](README.md)
+[中文](README.md)
 
-Simplifies UI mask configuration. Supports configurable forward/inverted rectangular mask and two area selection modes: manual and target UI reference.
+A rectangular overlay or cutout guide with Manual and UITarget selection. It inherits `MaskableGraphic` and can be clipped by ancestor masks; **it does not automatically clip its children**.
 
+## Requirements and verification
 
-## Features
+- Minimum compatibility targets: Unity 2019.4+ / Tuanjie 1.8.4+. Minimum-version imports remain unverified.
+- Requires `com.unity.ugui`, declared as `1.0.0`. Both plugin assemblies explicitly reference `UnityEngine.UI`.
+- Runtime, Editor and Player-conditional source compilation against Unity 2022.3.62f3 assemblies passed, along with isolated state, rectangle mesh and ownership tests.
+- A valid local Editor license is unavailable. Clean import, Scene interaction, native lifecycle, Prefab persistence and Player build/run acceptance remain pending. Source checks do not replace engine validation.
+- Engine-specific `.meta` files for the new `Runtime/FEasyUIMaskTargetArea.cs` must still be generated and committed using the respective engines. Existing GUIDs are preserved; complete engine-branch and package-install acceptance is pending.
 
-- **Forward / Inverted Mask** — Toggle between cutting out the target area or covering everything except the target area
-- **Two Area Selection Modes**
-  - *Manual*: Define offset and size directly via handles in Scene view
-  - *UITarget*: Automatically follow a specified RectTransform
-- **Raycast Filtering** — Respects `raycastTarget` to control whether clicks can pass through the masked area
-- **Real-time Update** — Optional per-frame refresh for following moving targets
-- **Custom Inspector** — Built-in Scene handles for intuitive area editing
-- **Undo Support** — All edits in the Scene view are undoable
+## Installation and branches
 
-## Known Limitations
+Use `Window > Package Manager > + > Add package from git URL` with the appropriate branch:
 
-- Currently only **rectangular** mask shapes are supported
-
-## Requirements
-
-- 团结引擎 1.8.4+ / Unity 2019.4+
-- Requires Unity UI (`com.unity.ugui`, declared as `1.0.0` in the package manifest). UPM requests this dependency automatically; install Unity UI through Package Manager before a manual Assets installation.
-- `.meta` files are engine-specific. Make sure to install from the correct branch for your engine.
-
-These versions are minimum compatibility targets; cross-version engine acceptance is pending. Source compilation was checked against Unity 2022.3.62f3 assemblies. Clean import, Scene interaction and Player builds remain unverified because a valid local Editor license was unavailable. Unity 2019.4 and Tuanjie 1.8.4 still require validation in their respective environments.
-
-> [!NOTE]
-> GUIDs are **not compatible** between Unity and 团结引擎. Always install from the correct branch for your engine.
-
-## Installation
-
-### Via Package Manager (UPM)
-
-1. Open `Window > Package Manager`
-2. Click `+` in the top-left corner → `Add package from git URL`
-3. Paste the URL for your engine:
-
-| Engine | Branch | Install URL |
-|--------|--------|-------------|
-| 团结引擎 | `tuanjie` | `https://github.com/FiveT-53/F_EasyUIMask.git#tuanjie` |
+| Engine | Branch | Git URL |
+| --- | --- | --- |
 | Unity | `unity` | `https://github.com/FiveT-53/F_EasyUIMask.git#unity` |
+| Tuanjie | `tuanjie` | `https://github.com/FiveT-53/F_EasyUIMask.git#tuanjie` |
 
-> If no branch is specified, the default (`main`) branch contains source code without `.meta` files and is not directly installable.
+This repository maintains separate metadata on its engine branches. Preserve each branch's existing GUIDs. `main` contains shared source without `.meta` files: commit source changes there first, synchronize them to the engine branches, and generate metadata for new assets using the corresponding engine. Do not regenerate existing asset GUIDs.
 
-### Via Git URL with Version
+For manual installation, install Unity UI using Package Manager, then copy the matching engine branch into `Assets`. UPM requests the UI dependency from the manifest. Both installation paths still require clean-import verification in licensed engines.
 
-You can also pin to a specific version tag:
+Existing `v1.0.0-unity` / `v1.0.0-tuanjie` tags refer to the old version and do not contain these Unreleased fixes. No new tag or release was created.
 
-```
-https://github.com/FiveT-53/F_EasyUIMask.git#v1.0.0-tuanjie
-https://github.com/FiveT-53/F_EasyUIMask.git#v1.0.0-unity
-```
+## Quick start
 
-### Manual
+1. Create a UI GameObject under a Canvas, add `F_Easy UI Mask`, and configure its outer RectTransform, color and `raycastTarget`.
+2. Manual: set `targetOffset` relative to the mask pivot and `targetSize` in local units, or use `Edit Area` in Scene view.
+3. UITarget: assign `targetUI`. Camera / World Space root canvases on both sides require `worldCamera`; Overlay uses no camera.
+4. `invertMask=false` covers the intersection; `true` covers the outer rect outside the hole.
+5. Active, enabled playing components attempt their first refresh in a subsequent `LateUpdate`, even with real-time updates disabled. Initialize the object as inactive when it must start hidden.
 
-If installing manually, download the branch for your engine and copy the `FEasyUIMask` folder into your project's `Assets` folder.
-
-### Source maintenance
-
-Commit shared source changes on `main`, then synchronize them to `unity` and `tuanjie`. Preserve existing `.meta` files on each engine branch and generate metadata for new assets with the corresponding engine. Do not copy GUIDs between engines or regenerate existing asset GUIDs.
-
-## Quick Start
-
-1. Add `F_Easy UI Mask` component to a `UI` GameObject via `Add Component`, `Empty` GameObject is recommended
-2. Choose `Area Select Mode`:
-   - **Manual**: Adjust `Offset` and `Size`, use the Scene `Edit Area` button to edit visually
-   - **UITarget**: Drag a target RectTransform into the `Target` field
-3. Toggle `Invert Mask` to switch between forward and inverted modes
-4. In Play Mode, an active, enabled component attempts its first refresh in a subsequent `LateUpdate`, even with `Real-time Update` disabled. Call `RefreshMask()` to commit later target, size or inversion changes, or enable `Real-time Update` to check for changes each frame.
+Attach this controller to an **independent active object outside the mask hierarchy** and assign its serialized reference. `Close()` will then leave the controller active.
 
 ```csharp
-// Refresh from code
-mask.GetComponent<F_EasyUIMask>().RefreshMask();
+using UnityEngine;
+using F_EasyUIMask;
+
+public class MaskExample : MonoBehaviour
+{
+    [SerializeField] private FEasyUIMask mask;
+
+    public void ShowFor(RectTransform target)
+    {
+        if (mask == null || target == null) return;
+        mask.Init(); // Optional; does not show or hide the object.
+        mask.areaSelectMode = FEasyUIMask.AreaSelectMode.UITarget;
+        mask.targetUI = target;
+        mask.invertMask = true;
+        mask.RefreshMask();
+    }
+
+    public void Hide()
+    {
+        if (mask != null) mask.Close();
+    }
+}
 ```
 
-`RefreshMask()` may activate the mask GameObject itself, but does not activate its parent or enable a disabled component. Every valid explicit refresh requests vertex rebuilding; rendering takes effect during the normal Canvas rebuild. With real-time updates disabled, field assignments preserve the previous committed bounds and inversion mode until an explicit refresh or a structural change triggers another refresh. For targets driven by automatic layout, refresh explicitly after layout finishes.
+## Geometry and interaction
 
-Migration: `Awake()` / `Init()` no longer hide the entire GameObject. Set the object initially inactive if your code relies on it starting hidden. A detected missing Canvas, target or required camera clears only this component's rendering and hit state, leaving the host active. Real-time updates can recover when configuration becomes valid. With real-time updates disabled, a failed request is consumed; explicitly refresh or wait for a new enable, parent or Canvas hierarchy event.
+Let T be the original target rectangle, O the current mask RectTransform, and I = O ∩ T. Rendering and hit testing share I without overwriting T.
 
-UITarget projects the target's four world corners through its root Canvas camera, then maps the screen points onto the mask plane through the mask's root Canvas camera. The result is a mask-local axis-aligned bounding rectangle. Rotation and perspective can leave empty corners; transparency, child bounds and parent Mask visibility do not shrink it.
+| State | Forward coverage / blocking | Inverted coverage / blocking |
+| --- | --- | --- |
+| Ordinary intersection | I | O excluding I |
+| No intersection or zero-size Manual target | Empty | All O |
+| Target covers the outer rect | All O | Empty |
+| Invalid projection, missing configuration or unusable outer rect | Empty | Empty |
 
-Manual `targetOffset` is relative to the mask pivot and sizes use local UI units. Negative size components clamp to zero without rewriting fields; zero size is a valid empty target. To preserve the old runtime center with a non-center pivot, use `newOffset = oldOffset + mask.rectTransform.rect.center`. Assets are not migrated automatically.
+Blocking assumes `raycastTarget=true`. Target boundaries belong to the intersection and pass through in inverted mode. Points outside O never hit. Disabling `raycastTarget` removes this Graphic as a target without guaranteeing that other UI or descendants pass through. Alpha and raycast participation are independent.
 
-UITarget Camera / World Space root canvases require an explicit `worldCamera`; Overlay uses no camera. Both sides must use the same display; individual camera viewports are supported. RenderTexture, stereo cameras and targets crossing camera clipping planes are unsupported. World Space follows the chosen observer only, without simultaneous multi-view alignment. Manual local calculations do not require a camera.
+Manual negative size components clamp to zero without rewriting fields; zero is a valid empty target. NaN, Infinity and overflow invalidate the state. A zero-area or non-invertible UITarget is invalid, unlike a valid empty Manual target.
 
-Forward mode draws and blocks the intersection of the target and the mask's outer rect. Inverted mode draws and blocks the rest of the outer rect; the hole and its boundary pass through. An entirely outside or zero-size Manual target gives an empty forward mask and a full inverted mask; a target covering the outer rect gives the reverse. Points outside the outer rect never hit. `raycastTarget=false` removes this Graphic as a raycast target without guaranteeing that other UI or descendants pass through.
+UITarget projects its own four world corners through the two root Canvas configurations into a mask-local axis-aligned bounding rectangle. Rotation, mirroring and perspective can leave rectangular empty corners; transparency, children and ancestor Mask visibility do not shrink the target.
 
-Runtime `TargetArea` helpers are identified by an owner marker. User objects with the same name are never claimed, migrated or deleted. Helpers moved elsewhere or containing user children or additional components are preserved with a warning. Rendering and hit testing do not depend on the helper.
+Different parents, canvases, CanvasScalers and camera viewports on the same display are supported. World Space uses the explicitly chosen observer. Cross-display projection, RenderTexture output, stereo cameras, simultaneous multi-view alignment and targets crossing camera clipping planes are unsupported. Not every custom rendering/compositing topology can be detected. Manual local calculations do not require a camera.
 
-Inspector changes, handle drags, reselection and Undo/Redo enqueue a coalesced refresh. Manual mode captures area-editing input only while `Edit Area` is enabled; Escape exits, and Alt/View navigation remains available. Multi-object area editing is not supported. Handles and Inspector fields use the same undoable serialized-property transaction.
+## Public fields and methods
 
-`Refresh Preview` does not activate inactive objects or enable components. Edit Mode and Prefab Stage update nonserialized caches without creating helpers or modifying persistent assets; cross-stage targets are rejected. Playing scene instances use the runtime bridge without activation. In Edit Mode, a selected mask with real-time updating enabled is checked continuously; otherwise refresh the preview manually after moving a target or camera.
-
-## API Reference
-
-### Public Properties
-
-| Property | Type | Description |
-|----------|------|-------------|
+| Field | Type | Meaning |
+| --- | --- | --- |
 | `areaSelectMode` | `AreaSelectMode` | `Manual` or `UITarget` |
-| `realTimeUpdate` | `bool` | Update every frame (may impact performance) |
-| `invertMask` | `bool` | Toggle forward/inverted mask |
-| `targetOffset` | `Vector2` | Mask area center offset (Manual mode) |
-| `targetSize` | `Vector2` | Mask area size (Manual mode) |
-| `targetUI` | `RectTransform` | Target UI reference (UITarget mode) |
+| `realTimeUpdate` | `bool` | Check changes each frame while active and enabled |
+| `invertMask` | `bool` | false for forward, true for inverted |
+| `targetOffset` | `Vector2` | Target center relative to the mask pivot |
+| `targetSize` | `Vector2` | Width and height in mask-local UI units |
+| `targetUI` | `RectTransform` | Followed target |
 
-### Public Methods
+| Method | Contract |
+| --- | --- |
+| `Init()` | Idempotently prepares runtime resources without showing or hiding; a Canvas is not required yet; normally optional |
+| `RefreshMask()` | Commits current bounds and mode, may activate this GameObject, never activates its parent or enables the component, and forces a vertex rebuild request |
+| `Close()` | Invalidates and deactivates the whole GameObject, affecting its components and descendants; repeatable without clearing configuration |
 
-| Method | Description |
-|--------|-------------|
-| `RefreshMask()` | Recalculate and update the mask area immediately |
-| `Close()` | Hide the mask GameObject |
+With real-time updates disabled, assignments retain the previous complete state until an explicit refresh or structural event requests another refresh. Real-time updates dirty vertices only when custom state changes. Rendering takes effect during normal Canvas rebuilding, not synchronously before the call returns. Complex layout has no same-frame zero-delay guarantee; refresh after layout completes when needed.
+
+Detected failure clears only this component's rendering and hit state, leaving the host active. Real-time mode keeps attempting recovery. Otherwise each request is consumed regardless of success and waits for an explicit refresh or another enable/parent/Canvas hierarchy event. A deliberately closed object never reactivates itself.
+
+## Editor and helpers
+
+Inspector, handles, reselection and Undo/Redo share a coalesced main-thread queue. Only a single active selection in Manual / Edit Area captures editing input. Escape exits; Alt/View navigation remains available. Multi-object area editing is not supported.
+
+`Refresh Preview` never activates objects or enables components. Edit Mode and Prefab Stage update only nonserialized caches, without creating helpers or modifying persistent assets; cross-stage targets are rejected. Playing scene instances use the runtime path without activation. Edit-mode real-time checking applies only to the selected mask. With it disabled, refresh manually after moving a target or camera. There is no automatic whole-scene preview.
+
+Runtime `TargetArea` helpers use serialized owner markers for recovery after domain reloads. Same-name user objects are never claimed, migrated or deleted. Moved helpers or those containing user children or extra components are preserved with a warning. Cleanup touches only directly owned areas without user content. Rendering and hit testing do not depend on helpers.
+
+## Migration
+
+- Awake / Init no longer hide the host automatically. Initialize the GameObject as inactive when it must start hidden.
+- Manual offsets now use the mask pivot. Preserve an old non-center-pivot runtime center with `newOffset = oldOffset + mask.rectTransform.rect.center`. No bulk migration occurs.
+- With real-time updates disabled, call RefreshMask after assignments to commit complete bounds and mode. Configuration failure no longer deactivates the host.
 
 ## License
 
-MIT License. See [LICENSE](LICENSE) for details.
+MIT. See [LICENSE](LICENSE).
