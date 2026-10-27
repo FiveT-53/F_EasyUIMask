@@ -1,194 +1,202 @@
+using System.Collections.Generic;
 using UnityEditor;
+using UnityEditor.SceneManagement;
 using UnityEngine;
 using F_EasyUIMask;
 
 [CustomEditor(typeof(FEasyUIMask))]
 public class FEasyUIMaskEditor : Editor
 {
-    [Tooltip("Dropdown State")]
     private bool showGraphic = true;
     private bool showMaskArea = true;
-
-    [Tooltip("Region Edit")]
     private bool isEditingArea;
-    private static readonly GUIContent editButtonContent = new GUIContent("Edit Area", "Edit mask area");
+    private readonly Vector3[] corners = new Vector3[4];
+    internal FEasyUIMask Mask { get { return target as FEasyUIMask; } }
 
-    void OnEnable()
+    private void OnEnable()
     {
-        SceneView.duringSceneGui += OnScene;
+        FEasyUIMaskRefreshQueue.Register(this);
     }
 
-    void OnDisable()
+    private void OnDisable()
     {
-        SceneView.duringSceneGui -= OnScene;
+        EndEditing();
+        FEasyUIMaskRefreshQueue.Unregister(this);
+    }
+
+    internal void EndEditing()
+    {
+        isEditingArea = false;
     }
 
     public override void OnInspectorGUI()
     {
-        serializedObject.Update();
-
-        var script = (FEasyUIMask)target;
-        if (script.GetComponent<CanvasRenderer>() == null)
+        if (targets.Length != 1 || serializedObject.isEditingMultipleObjects)
         {
-            EditorGUILayout.HelpBox("CanvasRenderer is missing! Click Fix to add it.", MessageType.Warning);
+            EditorGUILayout.HelpBox("Select one mask to edit its area.", MessageType.Info);
+            return;
+        }
+        FEasyUIMask mask = Mask;
+        if (mask == null)
+            return;
+        serializedObject.Update();
+        using (new EditorGUI.DisabledScope(true))
+            EditorGUILayout.PropertyField(serializedObject.FindProperty("m_Script"));
+
+        if (mask.GetComponent<CanvasRenderer>() == null)
+        {
+            EditorGUILayout.HelpBox("CanvasRenderer is missing.", MessageType.Warning);
             if (GUILayout.Button("Fix Missing CanvasRenderer"))
-            {
-                Undo.AddComponent<CanvasRenderer>(script.gameObject);
-            }
-            EditorGUILayout.Space();
+                Undo.AddComponent<CanvasRenderer>(mask.gameObject);
         }
 
         showGraphic = EditorGUILayout.Foldout(showGraphic, "Graphic", true);
         if (showGraphic)
-        {
-            DrawDefaultInspector();
-        }
+            DrawPropertiesExcluding(serializedObject, "m_Script", "realTimeUpdate", "areaSelectMode", "targetOffset", "targetSize", "targetUI", "invertMask");
 
-        EditorGUILayout.Space();
-
-        showMaskArea = EditorGUILayout.Foldout(showMaskArea, "Mask Area Setting", true);
+        showMaskArea = EditorGUILayout.Foldout(showMaskArea, "Mask Area Settings", true);
         if (showMaskArea)
         {
             using (new EditorGUI.IndentLevelScope())
             {
-                var realTimeProperty = serializedObject.FindProperty("realTimeUpdate");
                 PropertyField("realTimeUpdate", "Real Time Update");
-                if (realTimeProperty.boolValue)
-                {
-                    EditorGUILayout.HelpBox("Real time update may cause significant performance overhead. Use with caution.", MessageType.Warning);
-                }
-
-                EditorGUILayout.Space();
-
                 PropertyField("areaSelectMode", "Target Area Select Mode");
-                var mode = (FEasyUIMask.AreaSelectMode)serializedObject.FindProperty("areaSelectMode").enumValueIndex;
-
-                EditorGUILayout.Space();
-
+                FEasyUIMask.AreaSelectMode mode = (FEasyUIMask.AreaSelectMode)serializedObject.FindProperty("areaSelectMode").enumValueIndex;
                 if (mode == FEasyUIMask.AreaSelectMode.Manual)
                 {
-                    bool newEditing = GUILayout.Toggle(isEditingArea, editButtonContent, "Button");
-                    if (newEditing != isEditingArea)
+                    bool editing = GUILayout.Toggle(isEditingArea, "Edit Area", "Button");
+                    if (editing != isEditingArea)
                     {
-                        isEditingArea = newEditing;
+                        isEditingArea = editing;
                         SceneView.RepaintAll();
                     }
-
-                    EditorGUILayout.Space();
-
-                    PropertyField("targetOffset", "Offset");
-                    PropertyField("targetSize", "Size");
+                    PropertyField("targetOffset", "Offset (from Pivot)");
+                    SerializedProperty size = serializedObject.FindProperty("targetSize");
+                    EditorGUI.BeginChangeCheck();
+                    EditorGUILayout.PropertyField(size, new GUIContent("Size"));
+                    if (EditorGUI.EndChangeCheck())
+                        size.vector2Value = Vector2.Max(Vector2.zero, size.vector2Value);
                 }
                 else
                 {
+                    EndEditing();
                     PropertyField("targetUI", "Target");
                 }
-
-                EditorGUILayout.Space();
                 PropertyField("invertMask", "Invert Mask");
             }
         }
-
-        serializedObject.ApplyModifiedProperties();
+        if (serializedObject.ApplyModifiedProperties())
+            FEasyUIMaskRefreshQueue.Request(mask, true);
+        if (GUILayout.Button("Refresh Preview"))
+            FEasyUIMaskRefreshQueue.Request(mask, true);
+        if (!string.IsNullOrEmpty(mask.EditorPreviewFailure))
+            EditorGUILayout.HelpBox(mask.EditorPreviewFailure, MessageType.Warning);
     }
 
-    private void OnScene(SceneView view)
+    private void OnSceneGUI()
     {
-        HandleUtility.AddDefaultControl(GUIUtility.GetControlID(FocusType.Passive));
+        FEasyUIMask mask = Mask;
+        if (mask == null || Selection.activeGameObject != mask.gameObject || Selection.gameObjects.Length != 1
+            || !FEasyUIMaskRefreshQueue.CanRefresh(mask))
+        {
+            EndEditing();
+            return;
+        }
+        if (mask.areaSelectMode != FEasyUIMask.AreaSelectMode.Manual)
+        {
+            EndEditing();
+            return;
+        }
+        Event current = Event.current;
+        if (isEditingArea && current.type == EventType.KeyDown && current.keyCode == KeyCode.Escape)
+        {
+            EndEditing();
+            current.Use();
+            Repaint();
+            SceneView.RepaintAll();
+            return;
+        }
 
-        var script = target as FEasyUIMask;
-        if (!script || script.areaSelectMode != FEasyUIMask.AreaSelectMode.Manual) return;
-
-        RectTransform rt = script.rectTransform;
-        Vector2 offset = script.targetOffset;
-        Vector2 size = Vector2.Max(Vector2.zero, script.targetSize);
-
-        Vector2 min = offset - size / 2f;
-        Vector2 max = offset + size / 2f;
-
-        Vector3[] corners = new Vector3[4];
+        serializedObject.Update();
+        SerializedProperty offsetProperty = serializedObject.FindProperty("targetOffset");
+        SerializedProperty sizeProperty = serializedObject.FindProperty("targetSize");
+        Vector2 offset = offsetProperty.vector2Value;
+        Vector2 size = Vector2.Max(Vector2.zero, sizeProperty.vector2Value);
+        if (!Finite(offset.x) || !Finite(offset.y) || !Finite(size.x) || !Finite(size.y))
+            return;
+        RectTransform rt = mask.rectTransform;
+        Vector2 min = offset - size * 0.5f;
+        Vector2 max = offset + size * 0.5f;
+        float determinant = rt.localToWorldMatrix.determinant;
+        if (!Finite(min.x) || !Finite(min.y) || !Finite(max.x) || !Finite(max.y)
+            || !Finite(determinant) || determinant == 0)
+            return;
         corners[0] = rt.TransformPoint(min.x, min.y, 0);
         corners[1] = rt.TransformPoint(max.x, min.y, 0);
         corners[2] = rt.TransformPoint(max.x, max.y, 0);
         corners[3] = rt.TransformPoint(min.x, max.y, 0);
-
-        //Draw Region
-        Handles.color = new Color(0, 1, 0.5f, 0.8f);
-        Handles.DrawPolyLine(corners[0], corners[1], corners[2], corners[3], corners[0]);
-        //Handles.DrawSolidRectangleWithOutline(corners, new Color(0, 0.5f, 0.2f, 0.1f), Color.green);
-
-        if (!isEditingArea) return;
-
-        //Offset Handle
-        EditorGUI.BeginChangeCheck();
-        Vector3 centerWorld = rt.TransformPoint(offset.x, offset.y, 0);
-        Vector3 newCenterWorld = FreeMoveHandleCompat(
-            centerWorld, HandleUtility.GetHandleSize(centerWorld) * 0.1f, Vector3.one, Handles.RectangleHandleCap);
-
-        if (EditorGUI.EndChangeCheck())
+        Color previousColor = Handles.color;
+        try
         {
-            Undo.RecordObject(script, "Edit Offset");
-            script.targetOffset = rt.InverseTransformPoint(newCenterWorld);
-            offset = script.targetOffset;
-            min = offset - size / 2f;
-            max = offset + size / 2f;
+            Handles.color = new Color(0, 1, 0.5f, 0.8f);
+            Handles.DrawPolyLine(corners[0], corners[1], corners[2], corners[3], corners[0]);
+            if (!isEditingArea || current.alt || Tools.current == Tool.View)
+                return;
+            if (current.type == EventType.Layout)
+                HandleUtility.AddDefaultControl(GUIUtility.GetControlID("FEasyUIMaskArea".GetHashCode(), FocusType.Passive));
+
+            bool changed = false;
+            Vector3 centerWorld = rt.TransformPoint(offset.x, offset.y, 0);
+            EditorGUI.BeginChangeCheck();
+            Vector3 newCenter = FreeMoveHandleCompat(centerWorld, HandleUtility.GetHandleSize(centerWorld) * 0.1f, Vector3.one, Handles.RectangleHandleCap);
+            if (EditorGUI.EndChangeCheck())
+            {
+                offset = rt.InverseTransformPoint(newCenter);
+                min = offset - size * 0.5f;
+                max = offset + size * 0.5f;
+                changed = true;
+            }
+
+            Vector3 top = rt.TransformPoint(offset.x, max.y, 0);
+            Vector3 bottom = rt.TransformPoint(offset.x, min.y, 0);
+            Vector3 left = rt.TransformPoint(min.x, offset.y, 0);
+            Vector3 right = rt.TransformPoint(max.x, offset.y, 0);
+            EditorGUI.BeginChangeCheck();
+            Vector3 newTop = FreeMoveHandleCompat(top, HandleUtility.GetHandleSize(top) * 0.08f, Vector3.one, Handles.SphereHandleCap);
+            Vector3 newBottom = FreeMoveHandleCompat(bottom, HandleUtility.GetHandleSize(bottom) * 0.08f, Vector3.one, Handles.SphereHandleCap);
+            Vector3 newLeft = FreeMoveHandleCompat(left, HandleUtility.GetHandleSize(left) * 0.08f, Vector3.one, Handles.SphereHandleCap);
+            Vector3 newRight = FreeMoveHandleCompat(right, HandleUtility.GetHandleSize(right) * 0.08f, Vector3.one, Handles.SphereHandleCap);
+            if (EditorGUI.EndChangeCheck())
+            {
+                float minX = Mathf.Min(rt.InverseTransformPoint(newLeft).x, rt.InverseTransformPoint(newRight).x);
+                float maxX = Mathf.Max(rt.InverseTransformPoint(newLeft).x, rt.InverseTransformPoint(newRight).x);
+                float minY = Mathf.Min(rt.InverseTransformPoint(newBottom).y, rt.InverseTransformPoint(newTop).y);
+                float maxY = Mathf.Max(rt.InverseTransformPoint(newBottom).y, rt.InverseTransformPoint(newTop).y);
+                size = new Vector2(maxX - minX, maxY - minY);
+                offset = new Vector2(minX * 0.5f + maxX * 0.5f, minY * 0.5f + maxY * 0.5f);
+                changed = true;
+            }
+            if (changed && Finite(offset.x) && Finite(offset.y) && Finite(size.x) && Finite(size.y))
+            {
+                offsetProperty.vector2Value = offset;
+                sizeProperty.vector2Value = size;
+                if (serializedObject.ApplyModifiedProperties())
+                    FEasyUIMaskRefreshQueue.Request(mask, true);
+            }
         }
-
-        //Four-sided Handles
-        Vector3 topCenter = rt.TransformPoint((min.x + max.x) / 2f, max.y, 0);
-        Vector3 bottomCenter = rt.TransformPoint((min.x + max.x) / 2f, min.y, 0);
-        Vector3 leftCenter = rt.TransformPoint(min.x, (min.y + max.y) / 2f, 0);
-        Vector3 rightCenter = rt.TransformPoint(max.x, (min.y + max.y) / 2f, 0);
-
-        EditorGUI.BeginChangeCheck();
-
-        Vector3 newTopCenter = FreeMoveHandleCompat(
-            topCenter,
-            HandleUtility.GetHandleSize(topCenter) * 0.08f,
-            Vector3.one,
-            Handles.SphereHandleCap);
-
-        Vector3 newBottomCenter = FreeMoveHandleCompat(
-            bottomCenter,
-            HandleUtility.GetHandleSize(bottomCenter) * 0.08f,
-            Vector3.one,
-            Handles.SphereHandleCap);
-
-        Vector3 newLeftCenter = FreeMoveHandleCompat(
-            leftCenter,
-            HandleUtility.GetHandleSize(leftCenter) * 0.08f,
-            Vector3.one,
-            Handles.SphereHandleCap);
-
-        Vector3 newRightCenter = FreeMoveHandleCompat(
-            rightCenter,
-            HandleUtility.GetHandleSize(rightCenter) * 0.08f,
-            Vector3.one,
-            Handles.SphereHandleCap);
-
-        if (EditorGUI.EndChangeCheck())
+        finally
         {
-            Undo.RecordObject(script, "Edit Area");
-
-            Vector2 localCenter = rt.InverseTransformPoint(newCenterWorld);
-            Vector2 localTop = rt.InverseTransformPoint(newTopCenter);
-            Vector2 localBottom = rt.InverseTransformPoint(newBottomCenter);
-            Vector2 localLeft = rt.InverseTransformPoint(newLeftCenter);
-            Vector2 localRight = rt.InverseTransformPoint(newRightCenter);
-
-            float newMinX = Mathf.Min(localLeft.x, localRight.x);
-            float newMaxX = Mathf.Max(localLeft.x, localRight.x);
-            float newMinY = Mathf.Min(localBottom.y, localTop.y);
-            float newMaxY = Mathf.Max(localBottom.y, localTop.y);
-
-            script.targetSize = new Vector2(newMaxX - newMinX, newMaxY - newMinY);
-            script.targetOffset = new Vector2((newMinX + newMaxX) / 2f, (newMinY + newMaxY) / 2f);
+            Handles.color = previousColor;
         }
+    }
+
+    private static bool Finite(float value)
+    {
+        return !float.IsNaN(value) && !float.IsInfinity(value);
     }
 
     private static Vector3 FreeMoveHandleCompat(Vector3 position, float size, Vector3 snap, Handles.CapFunction cap)
     {
-        // Use the modern overload on the verified 2022.3 API; retain the 2019.4 signature below it.
 #if UNITY_2022_3_OR_NEWER
         return Handles.FreeMoveHandle(position, size, snap, cap);
 #else
@@ -196,8 +204,142 @@ public class FEasyUIMaskEditor : Editor
 #endif
     }
 
-    void PropertyField(string name, string label)
+    private void PropertyField(string name, string label)
     {
         EditorGUILayout.PropertyField(serializedObject.FindProperty(name), new GUIContent(label));
+    }
+}
+
+[InitializeOnLoad]
+internal static class FEasyUIMaskRefreshQueue
+{
+    private static readonly HashSet<FEasyUIMaskEditor> Editors = new HashSet<FEasyUIMaskEditor>();
+    private static readonly Dictionary<FEasyUIMask, bool> Pending = new Dictionary<FEasyUIMask, bool>();
+
+    static FEasyUIMaskRefreshQueue()
+    {
+        EditorApplication.update += Update;
+        Undo.undoRedoPerformed += RefreshObserved;
+        Selection.selectionChanged += SelectionChanged;
+        EditorApplication.playModeStateChanged += PlayModeChanged;
+        AssemblyReloadEvents.beforeAssemblyReload += Shutdown;
+    }
+
+    internal static void Register(FEasyUIMaskEditor editor)
+    {
+        Editors.Add(editor);
+        Request(editor.Mask, true);
+    }
+
+    internal static void Unregister(FEasyUIMaskEditor editor)
+    {
+        Editors.Remove(editor);
+        FEasyUIMask mask = editor.Mask;
+        if (mask != null)
+        {
+            foreach (FEasyUIMaskEditor other in Editors)
+                if (other != null && other.Mask == mask)
+                    return;
+            Pending.Remove(mask);
+        }
+    }
+
+    internal static void Request(FEasyUIMask mask, bool force)
+    {
+        if (mask == null)
+            return;
+        bool previous;
+        Pending.TryGetValue(mask, out previous);
+        Pending[mask] = previous || force;
+    }
+
+    internal static bool CanRefresh(FEasyUIMask mask)
+    {
+        return mask != null && !EditorUtility.IsPersistent(mask)
+            && mask.gameObject.scene.IsValid() && mask.gameObject.scene.isLoaded
+            && StageUtility.GetStageHandle(mask.gameObject).Equals(StageUtility.GetCurrentStageHandle());
+    }
+
+    private static void Update()
+    {
+        if (EditorApplication.isCompiling || (!EditorApplication.isPlaying && EditorApplication.isPlayingOrWillChangePlaymode))
+            return;
+        Editors.RemoveWhere(editor => editor == null);
+        foreach (FEasyUIMaskEditor editor in Editors)
+        {
+            FEasyUIMask mask = editor.Mask;
+            if (!CanRefresh(mask))
+                continue;
+            if (mask.ConsumeEditorRefreshRequest())
+                Request(mask, true);
+            if (mask.realTimeUpdate && !Application.IsPlaying(mask.gameObject)
+                && Selection.activeGameObject == mask.gameObject && Selection.gameObjects.Length == 1)
+                Request(mask, false);
+        }
+        if (Pending.Count == 0)
+            return;
+        var work = new List<KeyValuePair<FEasyUIMask, bool>>(Pending);
+        Pending.Clear();
+        bool refreshed = false;
+        foreach (KeyValuePair<FEasyUIMask, bool> entry in work)
+        {
+            FEasyUIMask mask = entry.Key;
+            if (!CanRefresh(mask))
+                continue;
+            bool sameStage = mask.areaSelectMode != FEasyUIMask.AreaSelectMode.UITarget || mask.targetUI == null
+                || (!EditorUtility.IsPersistent(mask.targetUI) && mask.targetUI.gameObject.scene.IsValid()
+                    && StageUtility.GetStageHandle(mask.targetUI.gameObject).Equals(StageUtility.GetStageHandle(mask.gameObject)));
+            try
+            {
+                mask.RefreshEditorPreview(entry.Value, sameStage);
+                refreshed = true;
+            }
+            catch (System.Exception exception)
+            {
+                Debug.LogException(exception, mask);
+            }
+        }
+        if (refreshed)
+        {
+            SceneView.RepaintAll();
+            EditorApplication.QueuePlayerLoopUpdate();
+        }
+    }
+
+    private static void RefreshObserved()
+    {
+        foreach (FEasyUIMaskEditor editor in Editors)
+            if (editor != null)
+                Request(editor.Mask, true);
+    }
+
+    private static void SelectionChanged()
+    {
+        Pending.Clear();
+        foreach (FEasyUIMaskEditor editor in Editors)
+            if (editor != null)
+                editor.EndEditing();
+        RefreshObserved();
+    }
+
+    private static void PlayModeChanged(PlayModeStateChange state)
+    {
+        Pending.Clear();
+        foreach (FEasyUIMaskEditor editor in Editors)
+            if (editor != null)
+                editor.EndEditing();
+        if (state == PlayModeStateChange.EnteredEditMode || state == PlayModeStateChange.EnteredPlayMode)
+            RefreshObserved();
+    }
+
+    private static void Shutdown()
+    {
+        EditorApplication.update -= Update;
+        Undo.undoRedoPerformed -= RefreshObserved;
+        Selection.selectionChanged -= SelectionChanged;
+        EditorApplication.playModeStateChanged -= PlayModeChanged;
+        AssemblyReloadEvents.beforeAssemblyReload -= Shutdown;
+        Editors.Clear();
+        Pending.Clear();
     }
 }
