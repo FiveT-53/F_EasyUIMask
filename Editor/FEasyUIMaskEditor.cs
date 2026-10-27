@@ -101,7 +101,7 @@ public class FEasyUIMaskEditor : Editor
 
         RectTransform rt = script.rectTransform;
         Vector2 offset = script.targetOffset;
-        Vector2 size = script.targetSize;
+        Vector2 size = Vector2.Max(Vector2.zero, script.targetSize);
 
         Vector2 min = offset - size / 2f;
         Vector2 max = offset + size / 2f;
@@ -129,6 +129,9 @@ public class FEasyUIMaskEditor : Editor
         {
             Undo.RecordObject(script, "Edit Offset");
             script.targetOffset = rt.InverseTransformPoint(newCenterWorld);
+            offset = script.targetOffset;
+            min = offset - size / 2f;
+            max = offset + size / 2f;
         }
 
         //Four-sided Handles

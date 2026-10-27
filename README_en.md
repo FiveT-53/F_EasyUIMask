@@ -81,7 +81,11 @@ mask.GetComponent<F_EasyUIMask>().RefreshMask();
 
 Migration: `Awake()` / `Init()` no longer hide the entire GameObject. Set the object initially inactive if your code relies on it starting hidden. A detected missing Canvas, target or required camera clears only this component's rendering and hit state, leaving the host active. Real-time updates can recover when configuration becomes valid. With real-time updates disabled, a failed request is consumed; explicitly refresh or wait for a new enable, parent or Canvas hierarchy event.
 
-The current staged repair includes the shared state and refresh skeleton. Four-corner target projection, non-center pivots, out-of-bounds meshes and helper ownership recovery across domain reloads remain for later batches. Edit-mode preview refresh will be connected in the editor batch.
+UITarget projects the target's four world corners through its root Canvas camera, then maps the screen points onto the mask plane through the mask's root Canvas camera. The result is a mask-local axis-aligned bounding rectangle. Rotation and perspective can leave empty corners; transparency, child bounds and parent Mask visibility do not shrink it.
+
+Manual `targetOffset` is relative to the mask pivot and sizes use local UI units. Negative size components clamp to zero without rewriting fields; zero size is a valid empty target. To preserve the old runtime center with a non-center pivot, use `newOffset = oldOffset + mask.rectTransform.rect.center`. Assets are not migrated automatically.
+
+UITarget Camera / World Space root canvases require an explicit `worldCamera`; Overlay uses no camera. Both sides must use the same display; individual camera viewports are supported. RenderTexture, stereo cameras and targets crossing camera clipping planes are unsupported. World Space follows the chosen observer only, without simultaneous multi-view alignment. Manual local calculations do not require a camera.
 
 ## API Reference
 

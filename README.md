@@ -80,7 +80,11 @@ mask.GetComponent<F_EasyUIMask.FEasyUIMask>().RefreshMask();
 
 迁移注意：`Awake()` / `Init()` 不再自动隐藏整个 GameObject，依赖默认隐藏的调用方应将对象初始设为 inactive。刷新检测到缺少 Canvas、目标或必需摄像机时，仅清空本组件显示和命中，宿主保持激活。实时开启时可在配置恢复后自动恢复；实时关闭时，一次失败请求会被消费，需显式刷新或等待启用、父节点、Canvas 结构变化触发新请求。
 
-当前分批修复已接入统一状态和刷新骨架；目标四角投影、非中心 Pivot、越界网格及辅助对象的域重载归属恢复仍待后续批次。编辑模式的预览刷新尚待编辑器批次接入。
+目标 UI 使用目标世界四角，经目标根 Canvas 摄像机投影到屏幕，再用遮罩根 Canvas 摄像机映射到遮罩局部平面，取局部轴对齐包围矩形。旋转或透视目标可能留下矩形空白区；不按透明像素、子节点或上级 Mask 的可见区域收缩。
+
+Manual 的 `targetOffset` 相对遮罩 Pivot，尺寸为本地 UI 单位。负尺寸逐轴钳制为零且不回写字段，零尺寸是有效空目标。非中心 Pivot 的旧配置若要保留旧运行时中心，可使用 `newOffset = oldOffset + mask.rectTransform.rect.center`，不会自动迁移资源。
+
+UITarget 的 Camera / World Space 根 Canvas 必须明确设置 `worldCamera`；Overlay 使用空摄像机。两端须在同一显示器，支持各自 viewport；RenderTexture、立体摄像机及跨近远裁剪面的目标不支持。World Space 仅按指定观察摄像机对齐，不保证多个视角同时对齐。Manual 本地计算不要求摄像机。
 
 ## API 参考
 

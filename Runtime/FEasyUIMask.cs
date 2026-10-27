@@ -17,6 +17,7 @@ public class FEasyUIMask : MaskableGraphic, ICanvasRaycastFilter
     private bool _isRefreshing;
     private string _lastFailure;
     private Object _lastFailureContext;
+    private readonly Vector3[] _worldCorners = new Vector3[4];
 
     public enum AreaSelectMode
     {
@@ -175,49 +176,140 @@ public class FEasyUIMask : MaskableGraphic, ICanvasRaycastFilter
             return false;
         }
 
-        Canvas rootCanvas = currentCanvas.rootCanvas;
-        Camera currentCamera = rootCanvas.renderMode == RenderMode.ScreenSpaceOverlay ? null : rootCanvas.worldCamera;
-        if (rootCanvas.renderMode != RenderMode.ScreenSpaceOverlay && currentCamera == null)
-        {
-            failure = "Canvas requires an explicit worldCamera.";
-            failureContext = rootCanvas;
-            return false;
-        }
-
-        Vector2 center;
-        Vector2 size;
         if (areaSelectMode == AreaSelectMode.Manual)
         {
-            // Transitional geometry: batch 3 fixes the original center-anchor convention.
-            center = rectTransform.rect.center + targetOffset;
-            size = targetSize;
+            if (TryCalculateManualBounds(targetOffset, targetSize, out min, out max))
+                return true;
+            failure = "Manual offset and size must be finite and within the supported numeric range.";
+            return false;
         }
-        else if (areaSelectMode == AreaSelectMode.UITarget)
-        {
-            if (targetUI == null)
-            {
-                failure = "Target UI is missing.";
-                return false;
-            }
-
-            // Transitional geometry: batch 3 replaces local copying with four-corner projection.
-            size = Vector2.Scale(rectTransform.rect.size, targetUI.anchorMax - targetUI.anchorMin) + targetUI.sizeDelta;
-            center = (Vector2)targetUI.localPosition
-                + Vector2.Scale(new Vector2(0.5f, 0.5f) - targetUI.pivot, size);
-        }
-        else
+        if (areaSelectMode != AreaSelectMode.UITarget)
         {
             failure = "Unknown area selection mode.";
             return false;
         }
-
-        min = center - size * 0.5f;
-        max = center + size * 0.5f;
-        if (!IsFinite(min.x) || !IsFinite(min.y) || !IsFinite(max.x) || !IsFinite(max.y)
-            || size.x < 0 || size.y < 0)
+        if (targetUI == null)
         {
-            failure = "Target bounds must be finite with non-negative size.";
-            failureContext = areaSelectMode == AreaSelectMode.UITarget ? (Object)targetUI : this;
+            failure = "Target UI is missing.";
+            return false;
+        }
+
+        failureContext = targetUI;
+        Canvas sourceCanvas = targetUI.GetComponentInParent<Canvas>();
+        Camera sourceCamera;
+        Camera destinationCamera;
+        int sourceDisplay;
+        int destinationDisplay;
+        if (!TryGetProjection(sourceCanvas, out sourceCamera, out sourceDisplay, out failure)
+            || !TryGetProjection(currentCanvas, out destinationCamera, out destinationDisplay, out failure))
+            return false;
+        if (sourceDisplay != destinationDisplay)
+        {
+            failure = "Cross-display projection is not supported.";
+            return false;
+        }
+
+        if (!HasInvertibleTransform(targetUI) || !HasInvertibleTransform(rectTransform)
+            || targetUI.rect.width <= 0 || targetUI.rect.height <= 0)
+        {
+            failure = "Target and mask transforms must be invertible, and the target must have positive area.";
+            return false;
+        }
+
+        targetUI.GetWorldCorners(_worldCorners);
+        Vector2 first = Vector2.zero;
+        Vector2 previous = Vector2.zero;
+        double twiceArea = 0;
+        for (int i = 0; i < 4; i++)
+        {
+            Vector3 world = _worldCorners[i];
+            Vector3 screen = sourceCamera == null ? world : sourceCamera.WorldToScreenPoint(world);
+            if (!IsFinite(screen.x) || !IsFinite(screen.y) || !IsFinite(screen.z)
+                || (sourceCamera != null && !WithinClipDepth(screen.z, sourceCamera)))
+            {
+                failure = "Target crosses the camera clip range or has invalid projected corners.";
+                return false;
+            }
+
+            Vector2 local;
+            if (!RectTransformUtility.ScreenPointToLocalPointInRectangle(rectTransform, screen, destinationCamera, out local)
+                || !IsFinite(local.x) || !IsFinite(local.y)
+                || (destinationCamera != null
+                    && !WithinClipDepth(destinationCamera.WorldToScreenPoint(rectTransform.TransformPoint(local)).z, destinationCamera)))
+            {
+                failure = "Target cannot be projected onto the mask plane within the camera clip range.";
+                return false;
+            }
+
+            if (i == 0)
+                first = min = max = local;
+            else
+            {
+                min = Vector2.Min(min, local);
+                max = Vector2.Max(max, local);
+                twiceArea += (double)previous.x * local.y - (double)previous.y * local.x;
+            }
+            previous = local;
+        }
+        twiceArea += (double)previous.x * first.y - (double)previous.y * first.x;
+        if (twiceArea == 0 || double.IsNaN(twiceArea) || double.IsInfinity(twiceArea)
+            || !IsFinite(max.x - min.x) || !IsFinite(max.y - min.y)
+            || max.x <= min.x || max.y <= min.y)
+        {
+            failure = "Projected target has no usable area.";
+            return false;
+        }
+        return true;
+    }
+
+    private static bool TryCalculateManualBounds(Vector2 offset, Vector2 size, out Vector2 min, out Vector2 max)
+    {
+        min = max = Vector2.zero;
+        if (!IsFinite(offset.x) || !IsFinite(offset.y) || !IsFinite(size.x) || !IsFinite(size.y))
+            return false;
+        size = new Vector2(Mathf.Max(0, size.x), Mathf.Max(0, size.y));
+        min = offset - size * 0.5f;
+        max = offset + size * 0.5f;
+        return IsFinite(min.x) && IsFinite(min.y) && IsFinite(max.x) && IsFinite(max.y);
+    }
+
+    private static bool HasInvertibleTransform(RectTransform rect)
+    {
+        float determinant = rect.localToWorldMatrix.determinant;
+        return IsFinite(determinant) && determinant != 0;
+    }
+
+    private static bool WithinClipDepth(float depth, Camera camera)
+    {
+        return IsFinite(depth) && depth >= camera.nearClipPlane && depth <= camera.farClipPlane;
+    }
+
+    private static bool TryGetProjection(Canvas canvas, out Camera camera, out int display, out string failure)
+    {
+        camera = null;
+        display = 0;
+        failure = null;
+        if (canvas == null)
+        {
+            failure = "Target must be under a Canvas.";
+            return false;
+        }
+        Canvas root = canvas.rootCanvas;
+        if (root.renderMode == RenderMode.ScreenSpaceOverlay)
+        {
+            display = root.targetDisplay;
+            return true;
+        }
+        camera = root.worldCamera;
+        if (camera == null)
+        {
+            failure = "Camera and World Space canvases require an explicit worldCamera.";
+            return false;
+        }
+        display = camera.targetDisplay;
+        if (camera.targetTexture != null || camera.stereoEnabled)
+        {
+            failure = "RenderTexture and stereo camera projection are not supported.";
             return false;
         }
         return true;
@@ -225,13 +317,13 @@ public class FEasyUIMask : MaskableGraphic, ICanvasRaycastFilter
 
     private void UpdateTargetArea(Vector2 min, Vector2 max)
     {
-        _targetArea.anchorMin = _targetArea.anchorMax = new Vector2(0.5f, 0.5f);
+        _targetArea.anchorMin = _targetArea.anchorMax = rectTransform.pivot;
         _targetArea.pivot = new Vector2(0.5f, 0.5f);
         _targetArea.localRotation = Quaternion.identity;
         _targetArea.localScale = Vector3.one;
         _targetArea.sizeDelta = max - min;
         Vector2 center = min * 0.5f + max * 0.5f;
-        _targetArea.localPosition = new Vector3(center.x, center.y, 0);
+        _targetArea.anchoredPosition3D = new Vector3(center.x, center.y, 0);
         _targetArea.gameObject.layer = gameObject.layer;
     }
 
@@ -301,10 +393,10 @@ public class FEasyUIMask : MaskableGraphic, ICanvasRaycastFilter
 
         var maskRect = rectTransform.rect;
 
-        var maskRectLeftTop = new Vector2(-maskRect.width/2, maskRect.height/2);
-        var maskRectLeftBottom = new Vector2(-maskRect.width/2, -maskRect.height/2);
-        var maskRectRightTop = new Vector2(maskRect.width/2, maskRect.height/2);
-        var maskRectRightBottom = new Vector2(maskRect.width/2, -maskRect.height/2);
+        var maskRectLeftTop = new Vector2(maskRect.xMin, maskRect.yMax);
+        var maskRectLeftBottom = new Vector2(maskRect.xMin, maskRect.yMin);
+        var maskRectRightTop = new Vector2(maskRect.xMax, maskRect.yMax);
+        var maskRectRightBottom = new Vector2(maskRect.xMax, maskRect.yMin);
 
         var targetRectLeftTop = new Vector2(_targetMin.x, _targetMax.y);
         var targetRectLeftBottom = _targetMin;
