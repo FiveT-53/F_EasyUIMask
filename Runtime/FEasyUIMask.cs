@@ -20,6 +20,82 @@ public class FEasyUIMask : MaskableGraphic, ICanvasRaycastFilter
     private readonly Vector3[] _worldCorners = new Vector3[4];
     private bool _reportedUnownedArea;
     private bool _reportedProtectedArea;
+#if UNITY_EDITOR
+    private int _editorRefreshRequested;
+
+    public string EditorPreviewFailure { get { return _lastFailure; } }
+
+    protected override void OnValidate()
+    {
+        base.OnValidate();
+        // OnValidate may run off the main thread; the Editor queue consumes only this flag.
+        System.Threading.Interlocked.Exchange(ref _editorRefreshRequested, 1);
+    }
+
+    public bool ConsumeEditorRefreshRequest()
+    {
+        return System.Threading.Interlocked.Exchange(ref _editorRefreshRequested, 0) != 0;
+    }
+
+    /// <summary>Editor-only bridge. Never activates an object or creates preview resources.</summary>
+    public void RefreshEditorPreview(bool forceVertices, bool targetInSameStage)
+    {
+        if (!gameObject.scene.IsValid() || !gameObject.scene.isLoaded)
+            return;
+        if (IsPlayingObject())
+        {
+            if (!isActiveAndEnabled || !gameObject.activeInHierarchy)
+            {
+                RequestRefresh(forceVertices);
+                return;
+            }
+            if (targetInSameStage)
+                RefreshMaskInternal(forceVertices, false);
+            else
+            {
+                InvalidateAppliedState(forceVertices);
+                _lastFailure = "Target and mask must belong to the same editor stage.";
+            }
+            return;
+        }
+        if (_isRefreshing)
+        {
+            System.Threading.Interlocked.Exchange(ref _editorRefreshRequested, 1);
+            return;
+        }
+
+        _isRefreshing = true;
+        try
+        {
+            Vector2 min;
+            Vector2 max;
+            string failure = "Target and mask must belong to the same editor stage.";
+            Object context = this;
+            bool candidateInvert = invertMask;
+            if (targetInSameStage && TryCalculateTargetBounds(out min, out max, out failure, out context))
+            {
+                CommitAppliedState(min, max, candidateInvert, forceVertices);
+                _lastFailure = null;
+                _lastFailureContext = null;
+            }
+            else
+            {
+                InvalidateAppliedState(forceVertices);
+                _lastFailure = failure;
+                _lastFailureContext = context;
+            }
+        }
+        catch
+        {
+            InvalidateAppliedState(true);
+            throw;
+        }
+        finally
+        {
+            _isRefreshing = false;
+        }
+    }
+#endif
 
     public enum AreaSelectMode
     {
@@ -263,6 +339,15 @@ public class FEasyUIMask : MaskableGraphic, ICanvasRaycastFilter
             failure = "Target UI is missing.";
             return false;
         }
+#if UNITY_EDITOR
+        if (!targetUI.gameObject.scene.IsValid() || !targetUI.gameObject.scene.isLoaded
+            || Application.IsPlaying(targetUI.gameObject) != IsPlayingObject())
+        {
+            failure = "Target must be a loaded scene object in the same playing world as the mask.";
+            failureContext = targetUI;
+            return false;
+        }
+#endif
 
         failureContext = targetUI;
         Canvas sourceCanvas = targetUI.GetComponentInParent<Canvas>();

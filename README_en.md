@@ -91,6 +91,10 @@ Forward mode draws and blocks the intersection of the target and the mask's oute
 
 Runtime `TargetArea` helpers are identified by an owner marker. User objects with the same name are never claimed, migrated or deleted. Helpers moved elsewhere or containing user children or additional components are preserved with a warning. Rendering and hit testing do not depend on the helper.
 
+Inspector changes, handle drags, reselection and Undo/Redo enqueue a coalesced refresh. Manual mode captures area-editing input only while `Edit Area` is enabled; Escape exits, and Alt/View navigation remains available. Multi-object area editing is not supported. Handles and Inspector fields use the same undoable serialized-property transaction.
+
+`Refresh Preview` does not activate inactive objects or enable components. Edit Mode and Prefab Stage update nonserialized caches without creating helpers or modifying persistent assets; cross-stage targets are rejected. Playing scene instances use the runtime bridge without activation. In Edit Mode, a selected mask with real-time updating enabled is checked continuously; otherwise refresh the preview manually after moving a target or camera.
+
 ## API Reference
 
 ### Public Properties

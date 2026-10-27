@@ -8,6 +8,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ### Fixed
 
+- Scoped Scene input to active Manual area editing and unified Inspector/handle edits through serialized properties and a coalesced main-thread refresh queue.
+- Added resource-free edit/Prefab Stage previews and Undo/Redo refresh, with runtime inspection respecting inactive and disabled objects.
 - Clipped forward and inverted meshes to the real outer rect, using non-overlapping quads and the same closed-boundary intersection for raycasts.
 - Added serialized helper ownership, reload recovery and conservative cleanup that preserves user content and unowned objects.
 - Converted target world corners through both root Canvas cameras into mask-local bounds, with explicit projection validation.
