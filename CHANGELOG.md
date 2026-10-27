@@ -4,6 +4,17 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+## [Unreleased]
+
+### Fixed
+
+- Declared the Unity UI 1.0.0 package dependency and explicit Runtime/Editor references to `UnityEngine.UI`.
+- Routed all five Scene handles through a compatibility helper using the rotation overload on older versions and the modern overload on Unity 2022.3 or newer.
+
+### Documentation
+
+- Clarified manual installation dependencies, source synchronization between engine branches, and the outstanding engine validation. Unity 2022.3.62f3 source compilation was checked; Editor import and Player verification are blocked by the local license. Minimum Unity/Tuanjie versions remain unverified.
+
 ## [1.0.0] - 2026-03-31
 
 ### Added
