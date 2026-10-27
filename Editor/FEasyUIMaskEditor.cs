@@ -122,7 +122,7 @@ public class FEasyUIMaskEditor : Editor
         //Offset Handle
         EditorGUI.BeginChangeCheck();
         Vector3 centerWorld = rt.TransformPoint(offset.x, offset.y, 0);
-        Vector3 newCenterWorld = Handles.FreeMoveHandle(
+        Vector3 newCenterWorld = FreeMoveHandleCompat(
             centerWorld, HandleUtility.GetHandleSize(centerWorld) * 0.1f, Vector3.one, Handles.RectangleHandleCap);
 
         if (EditorGUI.EndChangeCheck())
@@ -139,25 +139,25 @@ public class FEasyUIMaskEditor : Editor
 
         EditorGUI.BeginChangeCheck();
 
-        Vector3 newTopCenter = Handles.FreeMoveHandle(
+        Vector3 newTopCenter = FreeMoveHandleCompat(
             topCenter,
             HandleUtility.GetHandleSize(topCenter) * 0.08f,
             Vector3.one,
             Handles.SphereHandleCap);
 
-        Vector3 newBottomCenter = Handles.FreeMoveHandle(
+        Vector3 newBottomCenter = FreeMoveHandleCompat(
             bottomCenter,
             HandleUtility.GetHandleSize(bottomCenter) * 0.08f,
             Vector3.one,
             Handles.SphereHandleCap);
 
-        Vector3 newLeftCenter = Handles.FreeMoveHandle(
+        Vector3 newLeftCenter = FreeMoveHandleCompat(
             leftCenter,
             HandleUtility.GetHandleSize(leftCenter) * 0.08f,
             Vector3.one,
             Handles.SphereHandleCap);
 
-        Vector3 newRightCenter = Handles.FreeMoveHandle(
+        Vector3 newRightCenter = FreeMoveHandleCompat(
             rightCenter,
             HandleUtility.GetHandleSize(rightCenter) * 0.08f,
             Vector3.one,
@@ -181,6 +181,16 @@ public class FEasyUIMaskEditor : Editor
             script.targetSize = new Vector2(newMaxX - newMinX, newMaxY - newMinY);
             script.targetOffset = new Vector2((newMinX + newMaxX) / 2f, (newMinY + newMaxY) / 2f);
         }
+    }
+
+    private static Vector3 FreeMoveHandleCompat(Vector3 position, float size, Vector3 snap, Handles.CapFunction cap)
+    {
+        // Use the modern overload on the verified 2022.3 API; retain the 2019.4 signature below it.
+#if UNITY_2022_3_OR_NEWER
+        return Handles.FreeMoveHandle(position, size, snap, cap);
+#else
+        return Handles.FreeMoveHandle(position, Quaternion.identity, size, snap, cap);
+#endif
     }
 
     void PropertyField(string name, string label)

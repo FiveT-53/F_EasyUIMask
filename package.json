@@ -19,7 +19,9 @@
         "type": "git",
         "url": "https://github.com/FiveT-53/F_EasyUIMask.git"
     },
-    "dependencies": {},
+    "dependencies": {
+        "com.unity.ugui": "1.0.0"
+    },
     "exclude": [
         "README.md",
         "LICENSE",

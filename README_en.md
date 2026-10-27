@@ -23,7 +23,10 @@ Simplifies UI mask configuration. Supports configurable forward/inverted rectang
 ## Requirements
 
 - 团结引擎 1.8.4+ / Unity 2019.4+
+- Requires Unity UI (`com.unity.ugui`, declared as `1.0.0` in the package manifest). UPM requests this dependency automatically; install Unity UI through Package Manager before a manual Assets installation.
 - `.meta` files are engine-specific. Make sure to install from the correct branch for your engine.
+
+These versions are minimum compatibility targets; cross-version engine acceptance is pending. Source compilation was checked against Unity 2022.3.62f3 assemblies. Clean import, Scene interaction and Player builds remain unverified because a valid local Editor license was unavailable. Unity 2019.4 and Tuanjie 1.8.4 still require validation in their respective environments.
 
 > [!NOTE]
 > GUIDs are **not compatible** between Unity and 团结引擎. Always install from the correct branch for your engine.
@@ -55,6 +58,10 @@ https://github.com/FiveT-53/F_EasyUIMask.git#v1.0.0-unity
 ### Manual
 
 If installing manually, download the branch for your engine and copy the `FEasyUIMask` folder into your project's `Assets` folder.
+
+### Source maintenance
+
+Commit shared source changes on `main`, then synchronize them to `unity` and `tuanjie`. Preserve existing `.meta` files on each engine branch and generate metadata for new assets with the corresponding engine. Do not copy GUIDs between engines or regenerate existing asset GUIDs.
 
 ## Quick Start
 
