@@ -86,6 +86,10 @@ Manual 的 `targetOffset` 相对遮罩 Pivot，尺寸为本地 UI 单位。负�
 
 UITarget 的 Camera / World Space 根 Canvas 必须明确设置 `worldCamera`；Overlay 使用空摄像机。两端须在同一显示器，支持各自 viewport；RenderTexture、立体摄像机及跨近远裁剪面的目标不支持。World Space 仅按指定观察摄像机对齐，不保证多个视角同时对齐。Manual 本地计算不要求摄像机。
 
+正向模式只绘制并拦截目标与本体外框的交集；反向模式绘制并拦截外框中交集之外的部分，洞内及洞边界放行。目标完全越界或 Manual 零尺寸时，正向为空、反向为完整外框；目标覆盖外框时相反。外框外始终不拦截。`raycastTarget=false` 使本 Graphic 不作为射线目标，不保证其他 UI 或子节点也穿透。
+
+运行时辅助 `TargetArea` 由 owner 标记识别；同名用户对象不会被认领、迁移或删除。生成区域若被移走、添加子节点或其他组件，将被保留并提示。显示和点击不依赖该辅助对象。
+
 ## API 参考
 
 ### 公共属性
