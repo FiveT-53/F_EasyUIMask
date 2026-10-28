@@ -532,6 +532,8 @@ public class FEasyUIMask : MaskableGraphic, ICanvasRaycastFilter
         if (hadState || forceVertices)
         {
             canvasRenderer.Clear();
+            // Clear removes material bindings too; a vertex rebuild alone cannot restore rendering.
+            SetMaterialDirty();
             SetVerticesDirty();
         }
     }
