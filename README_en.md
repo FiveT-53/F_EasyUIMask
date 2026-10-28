@@ -8,17 +8,17 @@ A rectangular overlay or cutout guide with Manual and UITarget selection. It inh
 
 - Release baseline: Unity 2022.3 LTS. All 26 manual quick-acceptance cases passed on Unity 2022.3.62f3c1. Earlier versions are outside the current release support range.
 - UPM resolves `com.unity.ugui` 1.0.0 automatically. Runtime and Editor assemblies reference `UnityEngine.UI` explicitly.
-- Native regression checks cover mesh/material recovery after invalid configuration. Full Player builds, complex projection matrices and other editor versions still require verification.
+- A separate project installed the remote HTTPS Git package, verified Git source, stable GUIDs, automatic UGUI dependency resolution and Runtime/Editor compilation. Native regression checks on the installed package passed mesh/material recovery after invalid configuration. Full Player builds, complex projection matrices and other editor versions still require verification.
 - Tuanjie compatibility is unverified. Unity results do not establish Tuanjie support. The same standard UPM package is intended for future verification rather than separate engine-metadata release branches.
 
 ## Install using a Git URL
 
 1. Install Git and ensure `git --version` works. Restart Unity Hub and the Editor after changing PATH.
 2. Open `Window > Package Manager`, then `+ > Add package from git URL`.
-3. Paste the maintained package URL:
+3. Paste the pinned release URL (recommended):
 
 ```text
-https://github.com/FiveT-53/F_EasyUIMask.git#main
+https://github.com/FiveT-53/F_EasyUIMask.git#v2.0.0
 ```
 
 No manual source download, Assets copy or prior Unity UI installation is needed. The repository root is a complete UPM package with source, assembly definitions, assets and stable `.meta` files.
@@ -26,14 +26,14 @@ No manual source download, Assets copy or prior Unity UI installation is needed.
 Alternatively, add this entry to the existing `dependencies` in your project's `Packages/manifest.json`:
 
 ```json
-"com.fivet.feasyuimask": "https://github.com/FiveT-53/F_EasyUIMask.git#main"
+"com.fivet.feasyuimask": "https://github.com/FiveT-53/F_EasyUIMask.git#v2.0.0"
 ```
 
 ### Updates and pinned versions
 
-- `main` is the maintained branch. UPM locks Git dependencies to a commit. Re-add the same Git URL in Package Manager to fetch a new commit; do not delete the entire lock file or Library.
+- `#v2.0.0` pins an immutable release. Upgrade by choosing a newer published tag. For development, replace it with `#main`; UPM locks the resolved commit, so re-add the same `#main` URL to fetch newer changes. Do not delete the entire lock file or Library.
 - For production, replace `#main` with an existing release tag or full commit hash. Old `v1.0.0*` tags do not include the 2.0.0 fixes.
-- `unity` / `tuanjie` remain historical branches, not installation entry points for new versions. Re-add the `#main` URL to update an existing installation of the same package.
+- `unity` / `tuanjie` remain historical branches, not installation entry points for new versions. Re-add the `#v2.0.0` URL to update an existing installation of the same package.
 - If a copy was previously installed under Assets, back it up and remove that plugin copy before installing through UPM to avoid duplicate assemblies/types. Preserve your own application scripts.
 
 ### Troubleshooting

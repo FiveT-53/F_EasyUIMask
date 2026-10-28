@@ -8,17 +8,17 @@
 
 - 发布支持基线：Unity 2022.3 LTS；已在 Unity 2022.3.62f3c1 完成 26 项手动快速验收。更早版本不在当前发布支持范围内。
 - 依赖 `com.unity.ugui` 1.0.0，由 UPM 自动解析；Runtime 与 Editor 程序集显式引用 `UnityEngine.UI`。
-- 失败恢复的网格和材质绑定已通过指定编辑器的原生回归检查。完整 Player 构建、复杂投影矩阵及其他编辑器版本仍需验证。
+- 已用独立工程从远端 HTTPS Git URL 安装，确认 Git 来源、稳定 GUID、UGUI 自动依赖及 Runtime/Editor 编译；安装后的失败恢复网格和材质绑定通过原生回归检查。完整 Player 构建、复杂投影矩阵及其他编辑器版本仍需验证。
 - 团结引擎兼容性尚未验证，不将 Unity 的验证结果视为团结验证。计划使用同一份标准 UPM 包验证，不再维护单独的引擎元数据发布分支。
 
 ## 通过 Git URL 安装
 
 1. 安装 Git，确保 `git --version` 可用；安装 Git 后重新启动 Unity Hub 和编辑器，使其读取 PATH。
 2. 打开 `Window > Package Manager`，点击 `+ > Add package from git URL`。
-3. 粘贴当前维护版本链接：
+3. 粘贴固定版本链接（推荐）：
 
 ```text
-https://github.com/FiveT-53/F_EasyUIMask.git#main
+https://github.com/FiveT-53/F_EasyUIMask.git#v2.0.0
 ```
 
 无需手动下载源码或复制到 Assets，也无需预先手动安装 Unity UI。仓库根目录就是完整 UPM 包，包含源码、程序集定义、资源及稳定的 `.meta`。
@@ -26,14 +26,14 @@ https://github.com/FiveT-53/F_EasyUIMask.git#main
 也可在项目的 `Packages/manifest.json` 的 `dependencies` 中添加（保留已有依赖）：
 
 ```json
-"com.fivet.feasyuimask": "https://github.com/FiveT-53/F_EasyUIMask.git#main"
+"com.fivet.feasyuimask": "https://github.com/FiveT-53/F_EasyUIMask.git#v2.0.0"
 ```
 
 ### 更新与版本固定
 
-- `main` 是维护分支。UPM 会将 Git 依赖锁定到具体提交；远端更新后，在 Package Manager 中重新添加同一个 Git URL 获取新提交，不需要删除整个锁文件或 Library。
+- 上述 `#v2.0.0` 固定版本不会自动变化。升级时改用新的已发布标签。开发中体验最新改动可将其换成 `#main`；UPM 会锁定提交，重新添加相同 `#main` URL 获取新提交，不需要删除整个锁文件或 Library。
 - 生产项目可将 `#main` 换成已发布的版本标签或完整提交哈希。只使用仓库实际存在的标签；旧 `v1.0.0*` 标签不包含 2.0.0 修复。
-- `unity` / `tuanjie` 分支保留为历史记录，不再作为新版本安装入口。旧安装可在 Package Manager 中添加上述 `#main` URL，更新同名包。
+- `unity` / `tuanjie` 分支保留为历史记录，不再作为新版本安装入口。旧安装可在 Package Manager 中添加上述 `#v2.0.0` URL，更新同名包。
 - 如果此前将插件复制到了 Assets，先备份并移除那份插件，再安装 UPM 包，避免同名程序集/类型重复；不要删除自己的业务脚本。
 
 ### 安装失败时
