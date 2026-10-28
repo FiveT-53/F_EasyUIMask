@@ -2,57 +2,72 @@
 
 [中文](README.md)
 
-A rectangular overlay or cutout guide with Manual and UITarget selection. It inherits `MaskableGraphic` and can be clipped by ancestor masks; **it does not automatically clip its children**.
+A rectangular mask for Unity UGUI, designed for onboarding guides, UI highlights and click blocking. Define an area manually or let a transparent cutout follow a UI element.
 
-## Requirements and verification
+- **Inverted mask**: keep the target area clear and cover its surroundings to highlight a button or panel.
+- **Forward mask**: cover the target area for a localized overlay.
+- Includes Scene editing handles, runtime target tracking and area-based UI raycast filtering.
 
-- Release baseline: Unity 2022.3 LTS. All 26 manual quick-acceptance cases passed on Unity 2022.3.62f3c1. Earlier versions are outside the current release support range.
-- UPM resolves `com.unity.ugui` 1.0.0 automatically. Runtime and Editor assemblies reference `UnityEngine.UI` explicitly.
-- A separate project installed the remote HTTPS Git package, verified Git source, stable GUIDs, automatic UGUI dependency resolution and Runtime/Editor compilation. Native regression checks on the installed package passed mesh/material recovery after invalid configuration. Full Player builds, complex projection matrices and other editor versions still require verification.
-- Tuanjie compatibility is unverified. Unity results do not establish Tuanjie support. The same standard UPM package is intended for future verification rather than separate engine-metadata release branches.
+> This component draws an overlay. It does not automatically clip child UI like Unity's `Mask` or `RectMask2D`.
 
-## Install using a Git URL
+## Requirements
 
-1. Install Git and ensure `git --version` works. Restart Unity Hub and the Editor after changing PATH.
-2. Open `Window > Package Manager`, then `+ > Add package from git URL`.
-3. Paste the pinned release URL (recommended):
+- Unity 2022.3 LTS; verified on **2022.3.62f3c1**.
+- UGUI; the `com.unity.ugui` dependency is installed automatically.
+- Tuanjie and other Unity versions have not been verified.
+
+Tuanjie compatibility testing and adaptation are planned for a future release. The current release does not claim Tuanjie support. Verified Tuanjie versions will be listed in this README and the changelog once testing is complete; no release date is set.
+
+## Installation
+
+Install Git and check that `git --version` works. Restart Unity Hub and the Editor after installing Git.
+
+Open **Window → Package Manager → ＋ → Add package from git URL** and enter:
 
 ```text
 https://github.com/FiveT-53/F_EasyUIMask.git#v2.0.0
 ```
 
-No manual source download, Assets copy or prior Unity UI installation is needed. The repository root is a complete UPM package with source, assembly definitions, assets and stable `.meta` files.
+Wait for compilation to finish. No manual source download or Assets copy is needed.
 
-Alternatively, add this entry to the existing `dependencies` in your project's `Packages/manifest.json`:
+If you previously copied this plugin into your project, back up and remove that copy first to avoid duplicate types or assemblies. To upgrade, add the new release's Git URL in Package Manager; pinned releases do not update automatically.
 
-```json
-"com.fivet.feasyuimask": "https://github.com/FiveT-53/F_EasyUIMask.git#v2.0.0"
-```
+## Quick start: highlight a button
 
-### Updates and pinned versions
+1. Create a UI Image under your Canvas, name it `GuideMask`, and stretch its RectTransform over the area you want to cover.
+2. Remove its **Image component** and add **F_Easy UI Mask**. Place `GuideMask` last among the Canvas children so it draws above the target UI.
+3. Set **Color** to a translucent black, for example with an alpha of `0.65`.
+4. Set **Area Select Mode** to `UITarget` and assign the button's RectTransform to **Target UI**.
+5. Enable **Invert Mask** to leave the target clear and darken its surroundings. Enable **Real Time Update** if the target will move.
+6. Enter Play mode. With **Raycast Target** enabled, the cutout passes clicks through while the covered area blocks them.
 
-- `#v2.0.0` pins an immutable release. Upgrade by choosing a newer published tag. For development, replace it with `#main`; UPM locks the resolved commit, so re-add the same `#main` URL to fetch newer changes. Do not delete the entire lock file or Library.
-- For production, replace `#main` with an existing release tag or full commit hash. Old `v1.0.0*` tags do not include the 2.0.0 fixes.
-- `unity` / `tuanjie` remain historical branches, not installation entry points for new versions. Re-add the `#v2.0.0` URL to update an existing installation of the same package.
-- If a copy was previously installed under Assets, back it up and remove that plugin copy before installing through UPM to avoid duplicate assemblies/types. Preserve your own application scripts.
+The Canvas needs a GraphicRaycaster and the scene needs an EventSystem for button interaction. Keep the target button outside the `GuideMask` hierarchy so hiding the mask does not hide the button too.
 
-### Troubleshooting
+For Screen Space - Camera or World Space, assign the correct camera to the root Canvas of both the mask and the target.
 
-- Git executable not found: check PATH and restart Hub and the Editor.
-- GitHub connection failure: verify Git network access separately from script compilation errors.
-- Duplicate types/assemblies: check Assets, embedded packages and local packages for another copy.
-- Report the first complete Package Manager/Console error, editor version and Git URL.
+### Define an area manually
 
-See [release maintenance](Documentation~/Release.md) for the development and publishing workflow.
-## Quick start
+Set **Area Select Mode** to `Manual`, then configure **Target Offset** and **Target Size**. Click **Edit Area** in the Inspector to drag the center and edges in Scene view; press Escape to exit editing.
 
-1. Create a UI GameObject under a Canvas, add `F_Easy UI Mask`, and configure its outer RectTransform, color and `raycastTarget`.
-2. Manual: set `targetOffset` relative to the mask pivot and `targetSize` in local units, or use `Edit Area` in Scene view.
-3. UITarget: assign `targetUI`. Camera / World Space root canvases on both sides require `worldCamera`; Overlay uses no camera.
-4. `invertMask=false` covers the intersection; `true` covers the outer rect outside the hole.
-5. Active, enabled playing components attempt their first refresh in a subsequent `LateUpdate`, even with real-time updates disabled. Initialize the object as inactive when it must start hidden.
+`Target Offset` is relative to the mask's own pivot. After moving a target in Edit mode, select the mask and click **Refresh Preview** to update its preview.
 
-Attach this controller to an **independent active object outside the mask hierarchy** and assign its serialized reference. `Close()` will then leave the controller active.
+## Common settings
+
+| Setting | Purpose |
+| --- | --- |
+| `areaSelectMode` | `Manual` for an explicit area; `UITarget` for a target UI rectangle |
+| `targetUI` | RectTransform to follow in UITarget mode |
+| `targetOffset` / `targetSize` | Manual area center offset and dimensions, in mask-local coordinates |
+| `invertMask` | On: cover the outside and leave the inside clear; off: cover the inside |
+| `realTimeUpdate` | Follow target or configuration changes during Play mode |
+| `color` | Overlay color and opacity |
+| `raycastTarget` | Block UI clicks in the covered area; independent of color opacity |
+
+The mask only operates inside its own RectTransform. Parts of the target outside that boundary are not covered. UITarget uses a rectangular bounding area, so rotated targets may have clear corners around them; it does not trace transparent pixels in an image.
+
+## Scripting
+
+Save this as `MaskExample.cs`, attach it to an independent object outside the mask hierarchy, and assign `mask` in the Inspector. Call `ShowFor(target)` to show the guide and `Hide()` to close it.
 
 ```csharp
 using UnityEngine;
@@ -65,7 +80,6 @@ public class MaskExample : MonoBehaviour
     public void ShowFor(RectTransform target)
     {
         if (mask == null || target == null) return;
-        mask.Init(); // Optional; does not show or hide the object.
         mask.areaSelectMode = FEasyUIMask.AreaSelectMode.UITarget;
         mask.targetUI = target;
         mask.invertMask = true;
@@ -79,60 +93,23 @@ public class MaskExample : MonoBehaviour
 }
 ```
 
-## Geometry and interaction
+- With real-time updates disabled, call `RefreshMask()` after changing parameters or moving the target to update rendering and click filtering together.
+- `RefreshMask()` can activate the mask GameObject, but does not activate its parents or enable a disabled component.
+- `Close()` deactivates the entire mask GameObject, including its children. Start the object inactive if it should initially be hidden.
+- A missing target clears the mask's rendering and click blocking. After restoring the reference, real-time mode recovers automatically; otherwise, refresh explicitly.
 
-Let T be the original target rectangle, O the current mask RectTransform, and I = O ∩ T. Rendering and hit testing share I without overwriting T.
+See the [behavior and API reference](Documentation~/Reference.md) for the full API, coordinate and camera restrictions, editor previews and migration from 1.x.
 
-| State | Forward coverage / blocking | Inverted coverage / blocking |
-| --- | --- | --- |
-| Ordinary intersection | I | O excluding I |
-| No intersection or zero-size Manual target | Empty | All O |
-| Target covers the outer rect | All O | Empty |
-| Invalid projection, missing configuration or unusable outer rect | Empty | Empty |
+## Troubleshooting
 
-Blocking assumes `raycastTarget=true`. Target boundaries belong to the intersection and pass through in inverted mode. Points outside O never hit. Disabling `raycastTarget` removes this Graphic as a target without guaranteeing that other UI or descendants pass through. Alpha and raycast participation are independent.
+- **Git not found or download failed**: check Git on PATH and network access to GitHub, then restart Hub and the Editor.
+- **Duplicate types or assemblies**: look for another copy under Assets, local packages or embedded packages.
+- **Mask not visible**: check active objects and parents, component enablement, color alpha, target reference and Canvas cameras.
+- **Cutout does not follow the target**: enable Real Time Update or call `RefreshMask()` after making changes.
+- **Cannot click inside the cutout**: check the EventSystem, the Canvas GraphicRaycaster and other UI elements in front of the target with Raycast Target enabled.
 
-Manual negative size components clamp to zero without rewriting fields; zero is a valid empty target. NaN, Infinity and overflow invalidate the state. A zero-area or non-invertible UITarget is invalid, unlike a valid empty Manual target.
-
-UITarget projects its own four world corners through the two root Canvas configurations into a mask-local axis-aligned bounding rectangle. Rotation, mirroring and perspective can leave rectangular empty corners; transparency, children and ancestor Mask visibility do not shrink the target.
-
-Different parents, canvases, CanvasScalers and camera viewports on the same display are supported. World Space uses the explicitly chosen observer. Cross-display projection, RenderTexture output, stereo cameras, simultaneous multi-view alignment and targets crossing camera clipping planes are unsupported. Not every custom rendering/compositing topology can be detected. Manual local calculations do not require a camera.
-
-## Public fields and methods
-
-| Field | Type | Meaning |
-| --- | --- | --- |
-| `areaSelectMode` | `AreaSelectMode` | `Manual` or `UITarget` |
-| `realTimeUpdate` | `bool` | Check changes each frame while active and enabled |
-| `invertMask` | `bool` | false for forward, true for inverted |
-| `targetOffset` | `Vector2` | Target center relative to the mask pivot |
-| `targetSize` | `Vector2` | Width and height in mask-local UI units |
-| `targetUI` | `RectTransform` | Followed target |
-
-| Method | Contract |
-| --- | --- |
-| `Init()` | Idempotently prepares runtime resources without showing or hiding; a Canvas is not required yet; normally optional |
-| `RefreshMask()` | Commits current bounds and mode, may activate this GameObject, never activates its parent or enables the component, and forces a vertex rebuild request |
-| `Close()` | Invalidates and deactivates the whole GameObject, affecting its components and descendants; repeatable without clearing configuration |
-
-With real-time updates disabled, assignments retain the previous complete state until an explicit refresh or structural event requests another refresh. Real-time updates dirty vertices only when custom state changes. Rendering takes effect during normal Canvas rebuilding, not synchronously before the call returns. Complex layout has no same-frame zero-delay guarantee; refresh after layout completes when needed.
-
-Detected failure clears only this component's rendering and hit state, leaving the host active. Real-time mode keeps attempting recovery. Otherwise each request is consumed regardless of success and waits for an explicit refresh or another enable/parent/Canvas hierarchy event. A deliberately closed object never reactivates itself.
-
-## Editor and helpers
-
-Inspector, handles, reselection and Undo/Redo share a coalesced main-thread queue. Only a single active selection in Manual / Edit Area captures editing input. Escape exits; Alt/View navigation remains available. Multi-object area editing is not supported.
-
-`Refresh Preview` never activates objects or enables components. Edit Mode and Prefab Stage update only nonserialized caches, without creating helpers or modifying persistent assets; cross-stage targets are rejected. Playing scene instances use the runtime path without activation. Edit-mode real-time checking applies only to the selected mask. With it disabled, refresh manually after moving a target or camera. There is no automatic whole-scene preview.
-
-Runtime `TargetArea` helpers use serialized owner markers for recovery after domain reloads. Same-name user objects are never claimed, migrated or deleted. Moved helpers or those containing user children or extra components are preserved with a warning. Cleanup touches only directly owned areas without user content. Rendering and hit testing do not depend on helpers.
-
-## Migration
-
-- Awake / Init no longer hide the host automatically. Initialize the GameObject as inactive when it must start hidden.
-- Manual offsets now use the mask pivot. Preserve an old non-center-pivot runtime center with `newOffset = oldOffset + mask.rectTransform.rect.center`. No bulk migration occurs.
-- With real-time updates disabled, call RefreshMask after assignments to commit complete bounds and mode. Configuration failure no longer deactivates the host.
+When reporting a problem, include your editor and plugin versions, reproduction steps and the first complete Console error.
 
 ## License
 
-MIT. See [LICENSE](LICENSE).
+[MIT](LICENSE). See the [CHANGELOG](CHANGELOG.md) for updates and [release maintenance](Documentation~/Release.md) for contributing.
