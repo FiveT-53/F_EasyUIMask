@@ -6,27 +6,44 @@
 
 ## 环境与验证状态
 
-- 最低兼容目标：Unity 2019.4+ / 团结引擎 1.8.4+，最低版本尚未实际导入验证。
-- 依赖 `com.unity.ugui`，清单声明版本 `1.0.0`；两个插件程序集显式引用 `UnityEngine.UI`。
-- 已通过 Unity 2022.3.62f3 程序集的 Runtime、Editor 与 Player 条件源码编译检查，以及隔离状态、矩形网格和归属测试。
-- 本机 Editor 许可证不可用，干净导入、Scene 交互、原生生命周期、Prefab 保存和 Player 构建/运行仍未验收；源码检查不替代引擎验证。
-- 本次新增 `Runtime/FEasyUIMaskTargetArea.cs` 的引擎 `.meta` 尚待对应引擎生成并提交。现有 GUID 保持不变，完整引擎分支和安装包验收尚未完成。
+- 发布支持基线：Unity 2022.3 LTS；已在 Unity 2022.3.62f3c1 完成 26 项手动快速验收。更早版本不在当前发布支持范围内。
+- 依赖 `com.unity.ugui` 1.0.0，由 UPM 自动解析；Runtime 与 Editor 程序集显式引用 `UnityEngine.UI`。
+- 失败恢复的网格和材质绑定已通过指定编辑器的原生回归检查。完整 Player 构建、复杂投影矩阵及其他编辑器版本仍需验证。
+- 团结引擎兼容性尚未验证，不将 Unity 的验证结果视为团结验证。计划使用同一份标准 UPM 包验证，不再维护单独的引擎元数据发布分支。
 
-## 安装与分支
+## 通过 Git URL 安装
 
-在 `窗口 > 包管理器 > + > 从 git URL 添加包` 中选择对应分支：
+1. 安装 Git，确保 `git --version` 可用；安装 Git 后重新启动 Unity Hub 和编辑器，使其读取 PATH。
+2. 打开 `Window > Package Manager`，点击 `+ > Add package from git URL`。
+3. 粘贴当前维护版本链接：
 
-| 引擎 | 分支 | Git URL |
-| --- | --- | --- |
-| Unity | `unity` | `https://github.com/FiveT-53/F_EasyUIMask.git#unity` |
-| 团结引擎 | `tuanjie` | `https://github.com/FiveT-53/F_EasyUIMask.git#tuanjie` |
+```text
+https://github.com/FiveT-53/F_EasyUIMask.git#main
+```
 
-本仓库两个引擎分支维护各自的元数据，应保留对应分支 GUID。`main` 只维护通用源码，不带 `.meta`；开发时先在 main 提交，再同步源码到引擎分支，由对应引擎生成新增资源的元数据，不重建现有资源 GUID。
+无需手动下载源码或复制到 Assets，也无需预先手动安装 Unity UI。仓库根目录就是完整 UPM 包，包含源码、程序集定义、资源及稳定的 `.meta`。
 
-手动安装时，先通过包管理器安装 Unity UI，再把对应分支复制到工程 `Assets` 下。UPM 安装会按清单请求 UI 依赖。上述安装路径仍需在可用引擎中完成干净导入验证。
+也可在项目的 `Packages/manifest.json` 的 `dependencies` 中添加（保留已有依赖）：
 
-已有 `v1.0.0-unity` / `v1.0.0-tuanjie` 标签属于旧版本，不包含本次 Unreleased 修复；本轮未创建新标签或发布版本。
+```json
+"com.fivet.feasyuimask": "https://github.com/FiveT-53/F_EasyUIMask.git#main"
+```
 
+### 更新与版本固定
+
+- `main` 是维护分支。UPM 会将 Git 依赖锁定到具体提交；远端更新后，在 Package Manager 中重新添加同一个 Git URL 获取新提交，不需要删除整个锁文件或 Library。
+- 生产项目可将 `#main` 换成已发布的版本标签或完整提交哈希。只使用仓库实际存在的标签；旧 `v1.0.0*` 标签不包含 2.0.0 修复。
+- `unity` / `tuanjie` 分支保留为历史记录，不再作为新版本安装入口。旧安装可在 Package Manager 中添加上述 `#main` URL，更新同名包。
+- 如果此前将插件复制到了 Assets，先备份并移除那份插件，再安装 UPM 包，避免同名程序集/类型重复；不要删除自己的业务脚本。
+
+### 安装失败时
+
+- 提示找不到 Git：检查 PATH，重启 Hub 和编辑器。
+- GitHub 连接失败：检查本机 Git 对仓库的网络访问；这与包内脚本编译错误分开排查。
+- 类型或程序集重复：检查 Assets、嵌入包和本地包中是否还有另一份插件。
+- 请提供 Package Manager/Console 第一条完整错误、编辑器版本及使用的 URL。
+
+开发与发布流程见 [发布维护说明](Documentation~/Release.md)。
 ## 快速开始
 
 1. 在 Canvas 下新建 UI GameObject，添加 `F_Easy UI Mask`，设置外框 RectTransform、颜色和 `raycastTarget`。

@@ -6,27 +6,44 @@ A rectangular overlay or cutout guide with Manual and UITarget selection. It inh
 
 ## Requirements and verification
 
-- Minimum compatibility targets: Unity 2019.4+ / Tuanjie 1.8.4+. Minimum-version imports remain unverified.
-- Requires `com.unity.ugui`, declared as `1.0.0`. Both plugin assemblies explicitly reference `UnityEngine.UI`.
-- Runtime, Editor and Player-conditional source compilation against Unity 2022.3.62f3 assemblies passed, along with isolated state, rectangle mesh and ownership tests.
-- A valid local Editor license is unavailable. Clean import, Scene interaction, native lifecycle, Prefab persistence and Player build/run acceptance remain pending. Source checks do not replace engine validation.
-- Engine-specific `.meta` files for the new `Runtime/FEasyUIMaskTargetArea.cs` must still be generated and committed using the respective engines. Existing GUIDs are preserved; complete engine-branch and package-install acceptance is pending.
+- Release baseline: Unity 2022.3 LTS. All 26 manual quick-acceptance cases passed on Unity 2022.3.62f3c1. Earlier versions are outside the current release support range.
+- UPM resolves `com.unity.ugui` 1.0.0 automatically. Runtime and Editor assemblies reference `UnityEngine.UI` explicitly.
+- Native regression checks cover mesh/material recovery after invalid configuration. Full Player builds, complex projection matrices and other editor versions still require verification.
+- Tuanjie compatibility is unverified. Unity results do not establish Tuanjie support. The same standard UPM package is intended for future verification rather than separate engine-metadata release branches.
 
-## Installation and branches
+## Install using a Git URL
 
-Use `Window > Package Manager > + > Add package from git URL` with the appropriate branch:
+1. Install Git and ensure `git --version` works. Restart Unity Hub and the Editor after changing PATH.
+2. Open `Window > Package Manager`, then `+ > Add package from git URL`.
+3. Paste the maintained package URL:
 
-| Engine | Branch | Git URL |
-| --- | --- | --- |
-| Unity | `unity` | `https://github.com/FiveT-53/F_EasyUIMask.git#unity` |
-| Tuanjie | `tuanjie` | `https://github.com/FiveT-53/F_EasyUIMask.git#tuanjie` |
+```text
+https://github.com/FiveT-53/F_EasyUIMask.git#main
+```
 
-This repository maintains separate metadata on its engine branches. Preserve each branch's existing GUIDs. `main` contains shared source without `.meta` files: commit source changes there first, synchronize them to the engine branches, and generate metadata for new assets using the corresponding engine. Do not regenerate existing asset GUIDs.
+No manual source download, Assets copy or prior Unity UI installation is needed. The repository root is a complete UPM package with source, assembly definitions, assets and stable `.meta` files.
 
-For manual installation, install Unity UI using Package Manager, then copy the matching engine branch into `Assets`. UPM requests the UI dependency from the manifest. Both installation paths still require clean-import verification in licensed engines.
+Alternatively, add this entry to the existing `dependencies` in your project's `Packages/manifest.json`:
 
-Existing `v1.0.0-unity` / `v1.0.0-tuanjie` tags refer to the old version and do not contain these Unreleased fixes. No new tag or release was created.
+```json
+"com.fivet.feasyuimask": "https://github.com/FiveT-53/F_EasyUIMask.git#main"
+```
 
+### Updates and pinned versions
+
+- `main` is the maintained branch. UPM locks Git dependencies to a commit. Re-add the same Git URL in Package Manager to fetch a new commit; do not delete the entire lock file or Library.
+- For production, replace `#main` with an existing release tag or full commit hash. Old `v1.0.0*` tags do not include the 2.0.0 fixes.
+- `unity` / `tuanjie` remain historical branches, not installation entry points for new versions. Re-add the `#main` URL to update an existing installation of the same package.
+- If a copy was previously installed under Assets, back it up and remove that plugin copy before installing through UPM to avoid duplicate assemblies/types. Preserve your own application scripts.
+
+### Troubleshooting
+
+- Git executable not found: check PATH and restart Hub and the Editor.
+- GitHub connection failure: verify Git network access separately from script compilation errors.
+- Duplicate types/assemblies: check Assets, embedded packages and local packages for another copy.
+- Report the first complete Package Manager/Console error, editor version and Git URL.
+
+See [release maintenance](Documentation~/Release.md) for the development and publishing workflow.
 ## Quick start
 
 1. Create a UI GameObject under a Canvas, add `F_Easy UI Mask`, and configure its outer RectTransform, color and `raycastTarget`.

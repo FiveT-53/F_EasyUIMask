@@ -4,9 +4,11 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
-## [Unreleased]
+## [2.0.0] - 2026-10-28
 
 ### Fixed
+
+- Restore CanvasRenderer material bindings after invalid configuration, alongside the mesh rebuild.
 
 - Scoped Scene input to active Manual area editing and unified Inspector/handle edits through serialized properties and a coalesced main-thread refresh queue.
 - Added resource-free edit/Prefab Stage previews and Undo/Redo refresh, with runtime inspection respecting inactive and disabled objects.
@@ -26,13 +28,16 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ### Changed
 
+- Publish one complete UPM package from main with stable metadata; retire engine-specific branches as installation targets.
+- Set the release baseline to Unity 2022.3 and use a major version for changed initialization, failure and coordinate semantics.
+
 - Active components now attempt their first runtime refresh automatically, even with real-time updates disabled. Initialize the GameObject as inactive when it must start hidden.
 - Rendering and raycast filtering read committed state rather than live configuration or helper existence.
 
 ### Documentation
 
-- Clarified manual installation dependencies, source synchronization between engine branches, and the outstanding engine validation. Unity 2022.3.62f3 source compilation was checked; Editor import and Player verification are blocked by the local license. Minimum Unity/Tuanjie versions remain unverified.
-- Synchronized bilingual API, interaction, migration and preview documentation with an independently compiled controller example. New helper metadata still requires generation in the corresponding engines before complete package acceptance.
+- Replace outdated license/metadata warnings with actual manual acceptance results and explicit unverified platforms.
+- Document direct Git installation, dependency resolution, pinned versions and the single-package release workflow.
 
 ## [1.0.0] - 2026-03-31
 

@@ -1,30 +1,28 @@
 {
-    "name": "com.fivet.feasyuimask",
-    "displayName": "F_Easy UI Mask",
-    "version": "1.0.0",
-    "description": "Simplifies UI mask configuration. Supports configurable forward/inverted rectangular mask with two area selection modes: manual and target UI reference.",
-    "keywords": [
-        "ui",
-        "mask",
-        "guide",
-        "tutorial",
-        "highlight"
-    ],
-    "category": "UI",
-    "author": {
-        "name": "FiveT五三",
-        "email": "LuoK_53@outlook.com"
-    },
-    "repository": {
-        "type": "git",
-        "url": "https://github.com/FiveT-53/F_EasyUIMask.git"
-    },
-    "dependencies": {
-        "com.unity.ugui": "1.0.0"
-    },
-    "exclude": [
-        "README.md",
-        "LICENSE",
-        "CHANGELOG.md"
-    ]
+  "name": "com.fivet.feasyuimask",
+  "displayName": "F_Easy UI Mask",
+  "version": "2.0.0",
+  "description": "Simplifies UI mask configuration. Supports configurable forward/inverted rectangular mask with two area selection modes: manual and target UI reference.",
+  "keywords": [
+    "ui",
+    "mask",
+    "guide",
+    "tutorial",
+    "highlight"
+  ],
+  "author": {
+    "name": "FiveT五三",
+    "email": "LuoK_53@outlook.com"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/FiveT-53/F_EasyUIMask.git"
+  },
+  "dependencies": {
+    "com.unity.ugui": "1.0.0"
+  },
+  "unity": "2022.3",
+  "license": "MIT",
+  "documentationUrl": "https://github.com/FiveT-53/F_EasyUIMask/blob/main/README.md",
+  "changelogUrl": "https://github.com/FiveT-53/F_EasyUIMask/blob/main/CHANGELOG.md"
 }
