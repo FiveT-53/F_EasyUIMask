@@ -5,7 +5,7 @@ namespace F_EasyUIMask
 {
 [AddComponentMenu("UI/F_Easy UI Mask")]
 [RequireComponent(typeof(CanvasRenderer))]
-public class FEasyUIMask : MaskableGraphic, ICanvasRaycastFilter
+public partial class FEasyUIMask : MaskableGraphic, ICanvasRaycastFilter
 {
     private RectTransform _targetArea;
     private Vector2 _targetMin = Vector2.zero;
@@ -211,6 +211,7 @@ public class FEasyUIMask : MaskableGraphic, ICanvasRaycastFilter
 
     protected override void OnDestroy()
     {
+        ReleaseP0();
         if (IsPlayingObject())
         {
             for (int i = 0; i < transform.childCount; i++)
@@ -236,6 +237,7 @@ public class FEasyUIMask : MaskableGraphic, ICanvasRaycastFilter
 
     protected override void OnDisable()
     {
+        ReleaseP0();
         _pendingRefresh = false;
         _pendingForceVertices = false;
         _hasAppliedState = false;
@@ -270,6 +272,14 @@ public class FEasyUIMask : MaskableGraphic, ICanvasRaycastFilter
     {
         if (!IsPlayingObject())
             return;
+        if (p0PrecisionExperiment)
+        {
+            if (activateSelf && !gameObject.activeSelf)
+                gameObject.SetActive(true);
+            RequestRefresh(forceVertices);
+            return;
+        }
+        ReleaseP0();
         if (_isRefreshing)
         {
             RequestRefresh(forceVertices);
@@ -551,6 +561,8 @@ public class FEasyUIMask : MaskableGraphic, ICanvasRaycastFilter
     {
         if (!raycastTarget)
             return true;
+        if (_p0 != null)
+            return isActiveAndEnabled && _p0.Contains(screenPoint, eventCamera);
         if (!_hasAppliedState || !isActiveAndEnabled)
             return false;
 
@@ -591,6 +603,11 @@ public class FEasyUIMask : MaskableGraphic, ICanvasRaycastFilter
     protected override void OnPopulateMesh(VertexHelper toFill)
     {
         toFill.Clear();
+        if (_p0 != null)
+        {
+            _p0.Populate(toFill, color);
+            return;
+        }
         Rect outer = rectTransform.rect;
         if (!_hasAppliedState || !IsUsableOuter(outer))
             return;
@@ -631,6 +648,11 @@ public class FEasyUIMask : MaskableGraphic, ICanvasRaycastFilter
 
     void LateUpdate()
     {
+        if (IsPlayingObject() && p0PrecisionExperiment && isActiveAndEnabled && gameObject.activeInHierarchy)
+        {
+            TickP0();
+            return;
+        }
         if (IsPlayingObject() && isActiveAndEnabled && gameObject.activeInHierarchy
             && (_pendingRefresh || realTimeUpdate))
             RefreshMaskInternal(false, false);

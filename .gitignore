@@ -59,6 +59,8 @@ Desktop.ini
 # Crash reports
 crashpadreports/
 
-# Local AI workflow documents
-/AIWorkflow/
-/AIWorkflow.meta
+# Local AI instructions and workflow documents
+/AGENTS.md
+/AGENTS.md.meta
+/Docs/
+/Docs.meta

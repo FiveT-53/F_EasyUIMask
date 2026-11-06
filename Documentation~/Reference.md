@@ -2,6 +2,22 @@
 
 [中文入门](../README.md) · [English quick start](../README_en.md)
 
+## P0 精确遮罩实验 / Precision experiment
+
+仅本开发分支提供技术验证入口；包版本仍为 2.0.0，以下配置不是稳定公共 API。`p0PrecisionExperiment=false` 保留原矩形路径。启用时要求 `UITarget`、单个标准 Image（Simple；Sliced/Filled 仅架构探针）、Sprite 和两个显式引用的实验材质。通过 `Tools/F_Easy UI Mask/P0/Configure Selected Mask` 在使用工程内创建材质资产并分配，随场景引用进入 Player；不依赖运行时 Shader.Find。
+
+`p0AlphaThreshold` 默认 0.5，取纹理 Alpha >= 阈值，忽略目标 Image/顶点/CanvasGroup 透明度。GPU 从 CanvasRenderer 的实际网格/UV 提取二值蒙版，支持不可读源图；同一 RT 的异步回读数据用于 CPU 点击。首份回读前无显示/命中，等待期间保留上份完整状态；无效配置清空，不关闭宿主。禁用目标、全透明、Filled=0 或完全越界是有效空，反向覆盖整个外框。射线参与与遮罩颜色 Alpha 独立。
+
+`RefreshMask()` 在此实验中排队，于 LateUpdate 合并、更新 Canvas 后取网格；刷新期间请求保留。实时关闭后普通变化等待显式刷新或结构请求。正常刷新不同步回读，每次点击只查已提交字节；关闭/销毁后旧回调不能复活结果。域重载和进程退出清理时可等待该实例最后一次 GPU 请求。
+
+默认屏幕投影局部 RT，线性 RGBA32、Point/Clamp、无 mipmap/MSAA、一圈有效纹素保护，上限 `p0MaxTextureSize`（最大 2048）。误差受纹素大小限制；`p0TargetLocalProbe` 是以目标局部单位栅格化的对照探针，不保证屏幕等精度。`p0*` 非序列化计数/耗时字段仅为诊断。最多保留活动、在途/备用两份常规 RT 与对应 CPU 数据；改变尺寸可能重新分配。
+
+编辑模式与 Prefab Stage 不创建实验 GPU 预览，仍走原矩形预览。暂不支持 Tiled、分离 Alpha、自定义材质/网格效果、目标父级裁剪的可见轮廓、多目标、子节点组合或边距/羽化；不扩大原摄像机投影支持范围。目标父级可见裁剪未参与提取，不能将提取结果解释为裁剪后的完整最终形状。临时改变遮罩自身外框/投影时，UGUI 射线粗筛仍使用实时 RectTransform；等待期间的粗筛边界须进一步验证。
+
+This branch-only probe is opt-in and has no stable precision API. Configure material assets through the P0 editor menu and use one standard Image in UITarget mode. Texture Alpha at or above the threshold defines the shape; target tint and CanvasGroup Alpha are ignored. Rendering and CPU hits commit together after asynchronous GPU readback. First readiness is empty; pending work keeps the previous snapshot. Invalid input clears both outputs without closing the host; a disabled/transparent/zero-fill/offscreen target is valid empty. Click queries do not read back the GPU.
+
+The screen-region RGBA32 mask uses Point/Clamp sampling with a texel guard and a 2048 cap. A target-local comparison probe and diagnostic counters are experimental. No GPU preview is allocated in Edit Mode or Prefab Stage. Tiled, split Alpha, custom materials/effects, target ancestor visibility clipping, multiple targets and edge effects remain outside scope. Ancestor clipping on the target is not reconstructed. Existing projection restrictions still apply. UGUI's live RectTransform raycast broad phase during pending outer/projection changes requires further validation.
+
 ## 区域与交互规则
 
 目标原始矩形为 T，本体当前 RectTransform 外框为 O，绘制和命中共用交集 I = O ∩ T；裁剪结果不覆盖原始 T。
