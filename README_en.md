@@ -30,6 +30,8 @@ https://github.com/FiveT-53/F_EasyUIMask.git#v2.0.0
 
 Wait for compilation to finish. No manual source download or Assets copy is needed.
 
+Only `main` is maintained, with the complete UPM package published through official version tags. The `unity` and `tuanjie` branches have been deleted; stop using `#unity` and `#tuanjie` installation URLs and use the official version tag above for new installations. The `v1.0.0*` tags and their GitHub Releases preserve old versions. The `archive/unity-final` and `archive/tuanjie-final` tags preserve development snapshots, not official releases.
+
 If you previously copied this plugin into your project, back up and remove that copy first to avoid duplicate types or assemblies. To upgrade, add the new release's Git URL in Package Manager; pinned releases do not update automatically.
 
 ## Quick start: highlight a button

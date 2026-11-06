@@ -2,9 +2,9 @@
 
 ## 单一包 / One package
 
-`main` 同时维护源码和完整 UPM 包。保留所有资源及文件夹的 meta，新增资源首次导入时生成并提交。不要定期删除或重建 GUID。`unity`、`tuanjie` 仅保留历史，不再同步发布。
+后续仅维护 `main`，同时维护源码和完整 UPM 包，通过正式版本标签发布。保留所有资源及文件夹的 meta，新增资源首次导入时生成并提交。不要定期删除或重建 GUID。旧版本由 `v1.0.0*` 标签及对应 GitHub Release 保留；旧开发快照由附注标签 `archive/unity-final`、`archive/tuanjie-final` 保留，非正式发行版本。`unity`、`tuanjie` 分支已删除，`#unity`、`#tuanjie` 安装链接停止使用；新安装使用正式版本标签（如 `#v2.0.0`）。
 
-The repository root on `main` is the complete package. Commit metadata with assets and preserve GUIDs. Historical engine branches are not release targets.
+Maintain only `main`, whose repository root is the complete UPM package, and publish through official version tags. Commit metadata with assets and preserve GUIDs. The `v1.0.0*` tags and their GitHub Releases preserve old versions; the annotated `archive/unity-final` and `archive/tuanjie-final` tags preserve development snapshots, not official releases. The `unity` and `tuanjie` branches have been deleted. Stop using `#unity` and `#tuanjie` installation URLs; use official version tags such as `#v2.0.0` for new installations.
 
 ## 发布步骤 / Release steps
 

@@ -30,6 +30,8 @@ https://github.com/FiveT-53/F_EasyUIMask.git#v2.0.0
 
 等待编译完成即可使用，无需下载源码或复制到 Assets。
 
+后续仅维护 `main`，通过正式版本标签发布完整 UPM 包。`unity`、`tuanjie` 分支已删除，`#unity`、`#tuanjie` 安装链接停止使用；新安装请使用上述正式版本标签。旧版本由 `v1.0.0*` 标签及对应 GitHub Release 保留，旧开发快照由 `archive/unity-final`、`archive/tuanjie-final` 标签保留；归档标签不是正式发行版本。
+
 如果工程中已有手动复制的插件，请先备份并移除那份插件，避免重复类型或程序集。升级时，在 Package Manager 中添加新版本的 Git URL 即可；固定版本不会自动更新。
 
 ## 快速上手：为按钮添加引导遮罩
