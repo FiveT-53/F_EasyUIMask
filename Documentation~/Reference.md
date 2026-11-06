@@ -10,13 +10,13 @@
 
 `RefreshMask()` 在此实验中排队，于 LateUpdate 合并、更新 Canvas 后取网格；刷新期间请求保留。实时关闭后普通变化等待显式刷新或结构请求。正常刷新不同步回读，每次点击只查已提交字节；关闭/销毁后旧回调不能复活结果。域重载和进程退出清理时可等待该实例最后一次 GPU 请求。
 
-默认屏幕投影局部 RT，线性 RGBA32、Point/Clamp、无 mipmap/MSAA、一圈有效纹素保护，上限 `p0MaxTextureSize`（最大 2048）。误差受纹素大小限制；`p0TargetLocalProbe` 是以目标局部单位栅格化的对照探针，不保证屏幕等精度。`p0*` 非序列化计数/耗时字段仅为诊断。最多保留活动、在途/备用两份常规 RT 与对应 CPU 数据；改变尺寸可能重新分配。
+默认屏幕投影局部 RT，线性 RGBA32、Point/Clamp、无 mipmap/MSAA、一圈有效纹素保护，上限 `p0MaxTextureSize`（最大 2048）。未降采样时，区域边界对齐屏幕像素网格，一个 RT 纹素对应一个屏幕像素；超过尺寸上限时，两轴采用共同的有效纹素尺寸，区域、保护和 RT 尺寸一起计算。误差仍受纹素大小限制；`p0TargetLocalProbe` 是以目标局部单位栅格化的对照探针，不保证屏幕等精度。`p0*` 非序列化计数/耗时字段仅为诊断。最多保留活动、在途/备用两份常规 RT 与对应 CPU 数据；改变尺寸可能重新分配。
 
 编辑模式与 Prefab Stage 不创建实验 GPU 预览，仍走原矩形预览。暂不支持 Tiled、分离 Alpha、自定义材质/网格效果、目标父级裁剪的可见轮廓、多目标、子节点组合或边距/羽化；不扩大原摄像机投影支持范围。目标父级可见裁剪未参与提取，不能将提取结果解释为裁剪后的完整最终形状。临时改变遮罩自身外框/投影时，UGUI 射线粗筛仍使用实时 RectTransform；等待期间的粗筛边界须进一步验证。
 
 This branch-only probe is opt-in and has no stable precision API. Configure material assets through the P0 editor menu and use one standard Image in UITarget mode. Texture Alpha at or above the threshold defines the shape; target tint and CanvasGroup Alpha are ignored. Rendering and CPU hits commit together after asynchronous GPU readback. First readiness is empty; pending work keeps the previous snapshot. Invalid input clears both outputs without closing the host; a disabled/transparent/zero-fill/offscreen target is valid empty. Click queries do not read back the GPU.
 
-The screen-region RGBA32 mask uses Point/Clamp sampling with a texel guard and a 2048 cap. A target-local comparison probe and diagnostic counters are experimental. No GPU preview is allocated in Edit Mode or Prefab Stage. Tiled, split Alpha, custom materials/effects, target ancestor visibility clipping, multiple targets and edge effects remain outside scope. Ancestor clipping on the target is not reconstructed. Existing projection restrictions still apply. UGUI's live RectTransform raycast broad phase during pending outer/projection changes requires further validation.
+The screen-region RGBA32 mask uses Point/Clamp sampling with a texel guard and a 2048 cap. Without downsampling, region bounds align to the screen pixel grid with one RT texel per screen pixel. At the size cap, both axes share a texel pitch, and bounds, guards and dimensions are calculated together; precision remains limited by the effective texel size. A target-local comparison probe and diagnostic counters are experimental. No GPU preview is allocated in Edit Mode or Prefab Stage. Tiled, split Alpha, custom materials/effects, target ancestor visibility clipping, multiple targets and edge effects remain outside scope. Ancestor clipping on the target is not reconstructed. Existing projection restrictions still apply. UGUI's live RectTransform raycast broad phase during pending outer/projection changes requires further validation.
 
 ## 区域与交互规则
 

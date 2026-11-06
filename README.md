@@ -10,7 +10,7 @@
 
 > 本插件绘制覆盖层，不会像 Unity 的 `Mask` / `RectMask2D` 一样自动裁剪子 UI。
 
-本开发分支包含默认关闭的 **P0 精确遮罩实验**，不属于 2.0.0 正式 API。播放场景中可通过 `Tools → F_Easy UI Mask → P0 → Configure Selected Mask` 配置材质引用，然后选择标准 Image 目标。范围、延迟提交和限制见[实验参考](Documentation~/Reference.md#p0-精确遮罩实验--precision-experiment)。
+本开发分支包含默认关闭的 **P0 精确遮罩实验**，不属于 2.0.0 正式 API。播放场景中可通过 `Tools → F_Easy UI Mask → P0 → Configure Selected Mask` 配置材质引用，然后选择标准 Image 目标。屏幕方案在未降采样时对齐像素网格，触及 RT 尺寸上限后精度受有效纹素大小限制。范围、延迟提交和限制见[实验参考](Documentation~/Reference.md#p0-精确遮罩实验--precision-experiment)。
 
 ## 环境要求
 

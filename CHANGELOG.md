@@ -4,6 +4,12 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+## [Unreleased]
+
+### Fixed
+
+- Align the experimental P0 screen-region mask bounds and RT dimensions to a shared texel grid, fixing contour resampling gaps and screen-pixel hit discrepancies. Keep a uniform texel pitch when downsampling at the size cap.
+
 ## [2.0.0] - 2026-10-28
 
 ### Fixed

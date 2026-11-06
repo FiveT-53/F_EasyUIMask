@@ -10,7 +10,7 @@ A rectangular mask for Unity UGUI, designed for onboarding guides, UI highlights
 
 > This component draws an overlay. It does not automatically clip child UI like Unity's `Mask` or `RectMask2D`.
 
-This development branch includes a disabled-by-default **P0 precision experiment**, outside the stable 2.0.0 API. Use `Tools → F_Easy UI Mask → P0 → Configure Selected Mask` to assign material assets, then select a standard Image target for Play Mode. See the [experimental reference](Documentation~/Reference.md#p0-精确遮罩实验--precision-experiment) for scope, delayed commits and limitations.
+This development branch includes a disabled-by-default **P0 precision experiment**, outside the stable 2.0.0 API. Use `Tools → F_Easy UI Mask → P0 → Configure Selected Mask` to assign material assets, then select a standard Image target for Play Mode. The screen path aligns to the pixel grid without downsampling; precision at the RT size cap is limited by the effective texel size. See the [experimental reference](Documentation~/Reference.md#p0-精确遮罩实验--precision-experiment) for scope, delayed commits and limitations.
 
 ## Requirements
 

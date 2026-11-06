@@ -233,13 +233,20 @@ public partial class FEasyUIMask
                 contentHash = hash; hasContentHash = true;
                 min = Vector2.Max(min, outerScreen.min); max = Vector2.Min(max, outerScreen.max);
                 empty |= min.x >= max.x || min.y >= max.y;
-                Rect region = empty ? new Rect(0, 0, 1, 1) : Rect.MinMaxRect(min.x - 1, min.y - 1, max.x + 1, max.y + 1);
                 int limit = Mathf.Clamp(owner.p0MaxTextureSize, 16, Mathf.Min(2048, SystemInfo.maxTextureSize));
-                float scale = Mathf.Min(1, (limit - 2) / Mathf.Max(region.width - 2, region.height - 2));
-                int width = empty ? 1 : Mathf.Clamp(Mathf.CeilToInt((region.width - 2) * scale) + 2, 3, limit);
-                int height = empty ? 1 : Mathf.Clamp(Mathf.CeilToInt((region.height - 2) * scale) + 2, 3, limit);
-                // The guard is one effective texel, including at reduced resolution.
-                if (!empty) region = Rect.MinMaxRect(min.x - 1 / scale, min.y - 1 / scale, max.x + 1 / scale, max.y + 1 / scale);
+                Rect region;
+                int width, height;
+                if (empty) { region = new Rect(0, 0, 1, 1); width = height = 1; }
+                else if (owner.p0TargetLocalProbe)
+                {
+                    // The comparison probe uses target-local units, not screen pixels.
+                    region = Rect.MinMaxRect(min.x - 1, min.y - 1, max.x + 1, max.y + 1);
+                    float scale = Mathf.Min(1, (limit - 2) / Mathf.Max(region.width - 2, region.height - 2));
+                    width = Mathf.Clamp(Mathf.CeilToInt((region.width - 2) * scale) + 2, 3, limit);
+                    height = Mathf.Clamp(Mathf.CeilToInt((region.height - 2) * scale) + 2, 3, limit);
+                    region = Rect.MinMaxRect(min.x - 1 / scale, min.y - 1 / scale, max.x + 1 / scale, max.y + 1 / scale);
+                }
+                else region = ScreenRegion(min, max, limit, out width, out height);
                 Slot slot = spare ?? new Slot(); spare = null;
                 pending = slot; pendingIdentity = observed;
                 slot.Outer = outer; slot.Region = region; slot.ScreenFromLocal = maskProjection;
@@ -302,6 +309,27 @@ public partial class FEasyUIMask
                 if (owner.p0ExtractionCount != countBefore)
                     owner.p0SubmissionMilliseconds = (float)((System.Diagnostics.Stopwatch.GetTimestamp() - start) * 1000.0 / System.Diagnostics.Stopwatch.Frequency);
                 refreshing = false;
+            }
+        }
+
+        private static Rect ScreenRegion(Vector2 min, Vector2 max, int limit, out int width, out int height)
+        {
+            // Quantize bounds and dimensions together. Rounding only the RT size
+            // resamples a different grid even when no downsampling is requested.
+            double texel = 1;
+            double extent = Math.Max((double)max.x - min.x, (double)max.y - min.y);
+            for (;;)
+            {
+                double x0 = Math.Floor(min.x / texel) - 1, y0 = Math.Floor(min.y / texel) - 1;
+                double x1 = Math.Ceiling(max.x / texel) + 1, y1 = Math.Ceiling(max.y / texel) + 1;
+                if (x1 - x0 <= limit && y1 - y0 <= limit)
+                {
+                    width = (int)(x1 - x0); height = (int)(y1 - y0);
+                    return Rect.MinMaxRect((float)(x0 * texel), (float)(y0 * texel), (float)(x1 * texel), (float)(y1 * texel));
+                }
+                // Reserve two guard texels plus room for grid alignment. Recompute
+                // the region as well; clamping dimensions alone changes the pitch.
+                texel = Math.Max(texel * 1.001, extent / (limit - 3));
             }
         }
 
