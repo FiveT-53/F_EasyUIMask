@@ -2,7 +2,7 @@
 
 [中文](README.md)
 
-A rectangular mask for Unity UGUI, designed for onboarding guides, UI highlights and click blocking. Define an area manually or let a transparent cutout follow a UI element.
+Overlay masks for Unity UGUI, designed for onboarding guides, UI highlights and click blocking. This branch provides separate rectangle and single-Image precision components.
 
 - **Inverted mask**: keep the target area clear and cover its surroundings to highlight a button or panel.
 - **Forward mask**: cover the target area for a localized overlay.
@@ -10,11 +10,24 @@ A rectangular mask for Unity UGUI, designed for onboarding guides, UI highlights
 
 > This component draws an overlay. It does not automatically clip child UI like Unity's `Mask` or `RectMask2D`.
 
-This development branch includes a disabled-by-default **P0 precision experiment**, outside the stable 2.0.0 API. Use `Tools → F_Easy UI Mask → P0 → Configure Selected Mask` to assign material assets, then select a standard Image target for Play Mode. The screen path aligns to the pixel grid without downsampling; precision at the RT size cap is limited by the effective texel size. See the [experimental reference](Documentation~/Reference.md#p0-精确遮罩实验--precision-experiment) for scope, delayed commits and limitations.
+This branch contains the unreleased **P1 two-component implementation**, with package version still 2.0.0. Compilation, representative Player regressions, precision/resource checks, migration and previews have been exercised in an isolated source-copy project on Unity 2022.3.62f3c1 / Built-in / D3D11. Local UPM import is blocked by a package-resolver fault; full acceptance remains incomplete. See the [verification scope](Documentation~/Release.md). The pinned tag below installs the released rectangle version rather than this branch.
+
+| Component | Selection and shape |
+| --- | --- |
+| `FEasyUIRectMask` | The 2.0 rectangle component, retaining Manual, UITarget and Scene handles |
+| `FEasyUIMask` | One standard Simple Image's actual mesh, UV and texture Alpha, including holes |
+
+For precision, add **F_Easy UI Mask**, bind **Target UI**, and enable **Invert Mask** for a cutout. No area mode is needed. Script importer defaults reference package materials; **Package Resources → Restore Package Resources** restores missing references. Selected active objects receive an asynchronous GPU preview without activating disabled objects. Ancestor Mask/RectMask2D visibility on the target is not extracted.
+
+Alpha >= `alphaThreshold` (default 0.5) defines a binary contour; target tint and CanvasGroup Alpha are ignored. Source Read/Write is unnecessary. Sliced, Filled, Tiled, split Alpha, custom materials/mesh effects and non-Image targets are rejected. Rendering and CPU hits commit together. First readiness is empty; pending target updates retain the last complete snapshot. Host transform, outer-rect or observer changes clear it. Representative in-flight changes passed, but arbitrary same-frame script/layout ordering remains unverified, so the declared scope still requires a stable host and observer.
+
+`maxTextureSize` defaults to 2048, with an effective cap of 16–2048. Precision is finite; the Inspector shows committed screen pixels per texel. Maximum double-buffered RGBA32 GPU/CPU data costs about 64 MiB plus meshes/materials/driver memory. This P1 run measured a readback median near 16.4 ms and maximum near 104.76 ms, with no fixed-frame guarantee. Runtime-created masks must receive serialized package material references through `ConfigureResources(extraction, coverage)` before assigning a target and refreshing. See the [behavior reference](Documentation~/Reference.md).
+
+The old script GUID belongs to `FEasyUIRectMask`. Migrate rectangle fields, GetComponent calls, inheritance and reflection names by intent. The old type name now means precision, so some code may compile with changed semantics. Representative scene/Prefab/variant, owner and UnityEvent migration fixtures passed; no business scenes are converted automatically. The rectangle instructions below use **F_Easy UI Rect Mask / FEasyUIRectMask** on this branch.
 
 ## Requirements
 
-- Unity 2022.3 LTS; verified on **2022.3.62f3c1**.
+- Unity 2022.3 LTS. P1 source-copy validation used **2022.3.62f3c1**; see release maintenance for its precise scope.
 - UGUI; the `com.unity.ugui` dependency is installed automatically.
 - Tuanjie and other Unity versions have not been verified.
 
@@ -39,7 +52,7 @@ If you previously copied this plugin into your project, back up and remove that 
 ## Quick start: highlight a button
 
 1. Create a UI Image under your Canvas, name it `GuideMask`, and stretch its RectTransform over the area you want to cover.
-2. Remove its **Image component** and add **F_Easy UI Mask**. Place `GuideMask` last among the Canvas children so it draws above the target UI.
+2. Remove its **Image component** and add **F_Easy UI Rect Mask**. Place `GuideMask` last among the Canvas children so it draws above the target UI.
 3. Set **Color** to a translucent black, for example with an alpha of `0.65`.
 4. Set **Area Select Mode** to `UITarget` and assign the button's RectTransform to **Target UI**.
 5. Enable **Invert Mask** to leave the target clear and darken its surroundings. Enable **Real Time Update** if the target will move.
@@ -79,12 +92,12 @@ using F_EasyUIMask;
 
 public class MaskExample : MonoBehaviour
 {
-    [SerializeField] private FEasyUIMask mask;
+    [SerializeField] private FEasyUIRectMask mask;
 
     public void ShowFor(RectTransform target)
     {
         if (mask == null || target == null) return;
-        mask.areaSelectMode = FEasyUIMask.AreaSelectMode.UITarget;
+        mask.areaSelectMode = FEasyUIRectMask.AreaSelectMode.UITarget;
         mask.targetUI = target;
         mask.invertMask = true;
         mask.RefreshMask();

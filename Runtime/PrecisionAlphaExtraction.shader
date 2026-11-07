@@ -1,4 +1,4 @@
-Shader "FEasyUIMask/P0/AlphaExtraction"
+Shader "FEasyUIMask/Precision/AlphaExtraction"
 {
     Properties
     {

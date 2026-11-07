@@ -1,4 +1,4 @@
-Shader "FEasyUIMask/P0/Coverage"
+Shader "FEasyUIMask/Precision/Coverage"
 {
     Properties
     {

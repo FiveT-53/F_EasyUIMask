@@ -7,9 +7,9 @@ namespace F_EasyUIMask
     [DisallowMultipleComponent]
     internal sealed class FEasyUIMaskTargetArea : MonoBehaviour
     {
-        [SerializeField, HideInInspector] private FEasyUIMask owner;
+        [SerializeField, HideInInspector] private FEasyUIRectMask owner;
 
-        internal FEasyUIMask Owner
+        internal FEasyUIRectMask Owner
         {
             get { return owner; }
             set { owner = value; }

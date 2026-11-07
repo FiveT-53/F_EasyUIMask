@@ -2,7 +2,7 @@
   "name": "com.fivet.feasyuimask",
   "displayName": "F_Easy UI Mask",
   "version": "2.0.0",
-  "description": "Simplifies UI mask configuration. Supports configurable forward/inverted rectangular mask with two area selection modes: manual and target UI reference.",
+  "description": "UGUI overlay masks: FEasyUIRectMask for manual/target rectangles, and FEasyUIMask for a single Simple Image alpha contour with shared rendering and raycast snapshots.",
   "keywords": [
     "ui",
     "mask",

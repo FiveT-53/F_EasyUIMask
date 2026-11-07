@@ -1,5 +1,35 @@
 # 发布维护 / Release maintenance
 
+## P1 开发状态 / Development status (2026-11-07)
+
+P1 已完成双组件源码实现，并在独立源码副本工程执行本节所列验证。包版本仍为 2.0.0，不代表已发布版本包含精确组件。下方 2.0/P0 历史记录不能继承为 P1 验收结论。
+
+本轮验证环境：Unity **2022.3.62f3c1 (1623fc0bbb97)**、Built-in、Gamma、D3D11、Windows x64 Mono Development Player，RTX 3070 Laptop GPU。独立工程 `D:\UnityProject\FEasyUIMask.P1` 使用 `Assets` 源码副本及 `-noUpm`；没有覆盖原 P0 或业务工程。
+
+| 已执行组 | 结果 |
+| --- | --- |
+| 功能 Player：形状、正反、投影、有效空/失效恢复、自身裁剪、刷新与启停 | 139 检查，0 失败 |
+| 精度与资源/性能 Player | 108 检查，0 失败；18 精度样例、6,049,438 纹素 |
+| v2.0.0 场景、Prefab、Variant、字段/引用、owner、消费脚本和 UnityEvent 迁移夹具 | 32 检查，0 失败 |
+| 原始 RuntimeOnly UnityEvent 在实际 Play Mode 调用迁移后的 Close | 9 检查，0 失败 |
+| 精确编辑预览、默认材质、Undo、禁用/跨 Stage、Prefab 不变脏和在途清理 | 修复编辑模式回读推进后，14 检查，0 失败 |
+| 真实脚本重载、Domain Reload 开关、全局 Play 下 Prefab Stage 及退出资源清理 | 22 检查，0 失败 |
+| 在途宿主/摄像机变化、刷新重入、身份重建、失效恢复、多实例、softness/嵌套 Stencil | 62 检查，0 失败 |
+| Windows 实际鼠标输入经 EventSystem 派发 | 5 次点击，正反形状内外及外框规则均符合预期 |
+| 用户手动测试：独立场景 R01～R07、P01～P15、L01～L04 | 用户确认 26 项全部通过，无新增问题；P14 切换透视时的瞬时投影警告保留待调查，未修复 |
+
+精度样例中同提交 RT/CPU 逐纹素差异为 0；独立参考超过一个有效纹素 L∞ 的差异为 0。四档 120 个稳定帧无提取/回读、测得主线程分配 0 B；1000 次稳定轮询 0 B。100 次启停资源回到零基线。回读中位数约 16.4 ms、本次最大约 104.76 ms；没有固定帧数承诺。2048² RGBA32 双槽 GPU/CPU 数据上限约 64 MiB，不含其他开销。完整驱动显存峰值和 CPU 提交耗时未测。
+
+**本地 UPM 导入仍未通过**：初始工程以及使用完整工程设置/绝对包路径的新工程均在包解析器阶段报 `The "path" argument must be of type string. Received undefined`。上述源码副本结果不能表述为 UPM 安装通过，也不能替代远端安装验收。包默认资源已在源码副本中验证，UGUI 所需 Shader 变体已随代表性 Player 构建运行。
+
+原 P0 工程含 Assets/本地包副本及原型材质；本轮未改动它。后续复用前须核对重复 GUID，保留其测试资产。包内正式材质沿用 Unity 已生成的 P0 材质及 meta；精确脚本使用原型 partial 的独立 GUID，旧矩形脚本和 Shader 移动保留各自 GUID。矩形 GUID 的场景/Prefab 迁移已在独立夹具工程核对，任意业务消费脚本仍须按用途迁移类型。
+
+宿主位置/旋转/缩放/外框，以及摄像机 view/projection/viewport 的代表性在途变化用例已通过同帧射线失效和恢复后画面对照；尚未证明任意脚本执行顺序、动画与自动布局组合的同帧时序。因此当前支持声明仍限于稳定宿主/观察投影，不自动扩大边界。完整矩形 Inspector/Scene 手柄回归、任意业务交互、真实 GPU 故障注入、远端安装、压缩图集、其他平台/管线/API/Unity 版本及团结尚未完成。P1 完整验收退出条件尚未满足。
+
+P1 passed 386 automated checks across functionality, precision/resources, migration, editor previews, reload/lifecycle and scheduling, plus five actual Windows mouse clicks, in isolated source-copy projects on the environment above. The editor readback loop was fixed and retested. Local UPM import fails before compilation with a resolver error, including a retry with full project settings and an absolute package path; source-copy results do not certify UPM installation. Representative dynamic-host tests passed, but arbitrary same-frame script/layout ordering is unverified, so stable host/observer remains the declared boundary. Full acceptance, other platforms and release are pending. Version remains 2.0.0.
+
+The user also confirmed all 26 numbered manual-scene cases passed. A transient projection warning when switching P14 to perspective remains an open development observation; the user reported normal rendering and clicks after the switch. Its cause has not been independently confirmed or fixed.
+
 ## 单一包 / One package
 
 后续仅维护 `main`，同时维护源码和完整 UPM 包，通过正式版本标签发布。保留所有资源及文件夹的 meta，新增资源首次导入时生成并提交。不要定期删除或重建 GUID。旧版本由 `v1.0.0*` 标签及对应 GitHub Release 保留；旧开发快照由附注标签 `archive/unity-final`、`archive/tuanjie-final` 保留，非正式发行版本。`unity`、`tuanjie` 分支已删除，`#unity`、`#tuanjie` 安装链接停止使用；新安装使用正式版本标签（如 `#v2.0.0`）。

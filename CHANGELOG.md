@@ -6,9 +6,23 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
 
+### Added
+
+- Dedicated `FEasyUIMask` precision component for one standard Simple Image's actual mesh, UV and texture Alpha, with asynchronous shared rendering/hit snapshots, explicit material resource configuration and selected-object GPU previews.
+- Package extraction/coverage materials and shaders, precision Inspector status/quality/error reporting, host mapping invalidation, exact input comparison, material/atlas notifications and callback-safe resource ownership.
+
+### Changed
+
+- Rename the 2.0 rectangle component to `FEasyUIRectMask`, preserving its script GUID, serialized rectangle fields, helper ownership and Scene editor. Audit consumer type names: the old `FEasyUIMask` name now means precision.
+- Remove the P0 experiment switch, target-local probe, public diagnostic fields and P0 product menus. Precision rejects Sliced/Filled/Tiled, split Alpha and custom materials/effects; target ancestor visibility clipping is excluded.
+- Validate 386 automated checks and five actual mouse clicks in isolated source-copy Unity 2022.3.62f3c1 Built-in/D3D11 Windows Mono Players and Editors, covering precision/resources, migration, previews, reloads and representative in-flight scheduling. UPM import is blocked by a local resolver fault; full acceptance and arbitrary same-frame host/layout ordering remain pending. Package version is unchanged.
+- Record user confirmation of all 26 numbered manual-scene cases. A transient P14 perspective-switch projection warning remains under investigation; stable rendering and clicks were reported normal.
+
 ### Fixed
 
-- Align the experimental P0 screen-region mask bounds and RT dimensions to a shared texel grid, fixing contour resampling gaps and screen-pixel hit discrepancies. Keep a uniform texel pitch when downsampling at the size cap.
+- Advance edit-mode precision readback explicitly through the editor loop, including in-flight cleanup after deselection; retain the Player command-buffer readback path.
+
+- Retain the P0 screen-region grid alignment and uniform downsampling pitch in the new precision component; representative P1 precision regression passed.
 
 ## [2.0.0] - 2026-10-28
 
