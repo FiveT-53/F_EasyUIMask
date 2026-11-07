@@ -196,7 +196,11 @@ public class FEasyUIMask : MaskableGraphic, ICanvasRaycastFilter
             HostState state = new HostState();
             state.LocalToWorld = owner.rectTransform.localToWorldMatrix;
             state.Outer = owner.rectTransform.rect;
-            state.Width = Screen.width; state.Height = Screen.height;
+#if UNITY_EDITOR
+            bool editing = !Application.IsPlaying(owner.gameObject);
+            if (!editing)
+#endif
+            { state.Width = Screen.width; state.Height = Screen.height; }
             Canvas canvas = owner.canvas;
             state.Root = canvas == null ? null : canvas.rootCanvas;
             if (state.Root == null) return state;
@@ -205,11 +209,28 @@ public class FEasyUIMask : MaskableGraphic, ICanvasRaycastFilter
             state.PixelPerfect = state.Root.pixelPerfect;
             state.Display = state.Root.targetDisplay;
             state.Camera = state.Mode == RenderMode.ScreenSpaceOverlay ? null : state.Root.worldCamera;
+#if UNITY_EDITOR
+            // Screen dimensions vary with the active Editor/Scene GUI context.
+            // An edit preview belongs to its Canvas/observer, not that window.
+            if (editing && state.Mode == RenderMode.ScreenSpaceOverlay)
+            {
+                state.Viewport = state.Root.pixelRect;
+                state.Width = Mathf.RoundToInt(state.Viewport.width);
+                state.Height = Mathf.RoundToInt(state.Viewport.height);
+            }
+#endif
             if (state.Camera == null) return state;
             state.View = state.Camera.worldToCameraMatrix; state.Projection = state.Camera.projectionMatrix;
             state.Viewport = state.Camera.pixelRect; state.Output = state.Camera.targetTexture;
             state.Near = state.Camera.nearClipPlane; state.Far = state.Camera.farClipPlane;
             state.Display = state.Camera.targetDisplay; state.Stereo = state.Camera.stereoEnabled;
+#if UNITY_EDITOR
+            if (editing)
+            {
+                state.Width = Mathf.RoundToInt(state.Viewport.width);
+                state.Height = Mathf.RoundToInt(state.Viewport.height);
+            }
+#endif
             return state;
         }
         public bool Equals(HostState other)

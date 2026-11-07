@@ -17,7 +17,7 @@
 | `FEasyUIRectMask` | 2.0 矩形组件，保留 Manual、UITarget 和 Scene 手柄 |
 | `FEasyUIMask` | 只绑定单个标准 Simple Image，提取实际网格、UV 和纹理 Alpha，包含孔洞 |
 
-精确遮罩添加 **F_Easy UI Mask**，绑定 **Target UI**，勾选 **Invert Mask** 即形成洞口，无需区域模式。默认材质通过脚本导入器引用包内资源，缺失时可在 Inspector 的 **Package Resources → Restore Package Resources** 恢复。选中的活动对象使用异步 GPU 精确预览，不激活禁用对象；目标祖先的 Mask/RectMask2D 可见裁剪不参与提取。
+精确遮罩添加 **F_Easy UI Mask**，绑定 **Target UI**，勾选 **Invert Mask** 即形成洞口，无需区域模式。默认材质通过脚本导入器引用包内资源，缺失时可在 Inspector 的 **Package Resources → Restore Package Resources** 恢复。选中的活动对象使用异步 GPU 精确预览，Inspector 重建时保留已有快照，不激活禁用对象；目标祖先的 Mask/RectMask2D 可见裁剪不参与提取。
 
 Alpha >= `alphaThreshold`（默认 0.5）定义二值轮廓，忽略目标颜色和 CanvasGroup Alpha，不要求源纹理 Read/Write。P1 拒绝 Sliced、Filled、Tiled、分离 Alpha、自定义材质/网格效果及非 Image 目标。显示与 CPU 点击共同提交；首份异步数据未就绪前为空，普通目标更新等待期间保留上一份完整结果。宿主变换、外框或观察投影变化会清空旧快照；代表性在途变化已通过检查，但任意同帧脚本/布局时序尚未穷尽，当前支持声明仍限于稳定宿主与观察投影。
 

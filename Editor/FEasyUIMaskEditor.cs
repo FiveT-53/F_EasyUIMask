@@ -80,8 +80,19 @@ internal static class FEasyUIMaskPreviewQueue
 {
     private static readonly HashSet<FEasyUIMaskEditor> Editors = new HashSet<FEasyUIMaskEditor>();
     private static readonly HashSet<FEasyUIMask> Pending = new HashSet<FEasyUIMask>();
-    private static readonly HashSet<FEasyUIMask> Previews = new HashSet<FEasyUIMask>();
+    private sealed class Preview
+    {
+        internal FEasyUIMask Mask;
+        internal bool Ready, Preparing;
+    }
+    private static readonly Dictionary<FEasyUIMask, Preview> Previews = new Dictionary<FEasyUIMask, Preview>();
+    private static readonly List<Preview> Work = new List<Preview>();
     private static readonly List<FEasyUIMask> Retire = new List<FEasyUIMask>();
+    private static readonly List<FEasyUIMask> Requests = new List<FEasyUIMask>();
+    private static readonly List<FEasyUIMaskEditor> Repaints = new List<FEasyUIMaskEditor>();
+    private static GameObject selectedObject;
+    private static FEasyUIMask selectedMask;
+    private static bool singleSelection, clearing;
 
     static FEasyUIMaskPreviewQueue()
     {
@@ -91,68 +102,127 @@ internal static class FEasyUIMaskPreviewQueue
         EditorApplication.playModeStateChanged += PlayModeChanged;
         AssemblyReloadEvents.beforeAssemblyReload += Shutdown;
         EditorApplication.quitting += Shutdown;
+        CacheSelection();
     }
-    internal static void Register(FEasyUIMaskEditor editor) { Editors.Add(editor); Request(editor.Mask); }
+    internal static void Register(FEasyUIMaskEditor editor)
+    {
+        Editors.Add(editor);
+        FEasyUIMask mask = editor.Mask;
+        if (mask != null && singleSelection && selectedObject == mask.gameObject) selectedMask = mask;
+        EnsurePreview(mask);
+    }
     internal static void Unregister(FEasyUIMaskEditor editor)
     {
         Editors.Remove(editor);
-        FEasyUIMask mask = editor.Mask;
-        if (mask == null) return;
-        foreach (FEasyUIMaskEditor other in Editors)
-            if (other != null && other.Mask == mask) return;
-        Pending.Remove(mask); Previews.Remove(mask); mask.ReleaseEditorPreview();
+        // Unity may replace Editors while the same object remains selected.
+        // Selection/stage/object lifetime owns the preview, not this observer.
     }
-    internal static void Request(FEasyUIMask mask) { if (mask != null) Pending.Add(mask); }
-    private static bool CanPreview(FEasyUIMask mask)
+    internal static void Request(FEasyUIMask mask)
+    { if (mask != null) { EnsurePreview(mask); Pending.Add(mask); } }
+    private static bool IsAvailable(FEasyUIMask mask)
     {
         return mask != null && !EditorUtility.IsPersistent(mask) && mask.isActiveAndEnabled
             && mask.gameObject.scene.IsValid() && mask.gameObject.scene.isLoaded
-            && StageUtility.GetStageHandle(mask.gameObject).Equals(StageUtility.GetCurrentStageHandle())
-            && (Application.IsPlaying(mask.gameObject)
-                || (Selection.activeGameObject == mask.gameObject && Selection.gameObjects.Length == 1));
+            && StageUtility.GetStageHandle(mask.gameObject).Equals(StageUtility.GetCurrentStageHandle());
+    }
+    private static bool CanPreview(FEasyUIMask mask)
+    {
+        return IsAvailable(mask) && !Application.IsPlaying(mask.gameObject)
+            && singleSelection && selectedObject == mask.gameObject;
+    }
+    private static void EnsurePreview(FEasyUIMask mask)
+    {
+        if (clearing || !CanPreview(mask) || Previews.ContainsKey(mask)) return;
+        Previews.Add(mask, new Preview { Mask = mask });
+        Pending.Add(mask);
+    }
+    private static bool SameStage(FEasyUIMask mask)
+    {
+        return mask.targetUI == null || (!EditorUtility.IsPersistent(mask.targetUI)
+            && mask.targetUI.gameObject.scene.IsValid() && mask.targetUI.gameObject.scene.isLoaded
+            && StageUtility.GetStageHandle(mask.targetUI.gameObject).Equals(StageUtility.GetStageHandle(mask.gameObject)));
+    }
+    private static void CacheSelection()
+    {
+        selectedObject = Selection.activeGameObject;
+        singleSelection = selectedObject != null && Selection.gameObjects.Length == 1;
+        selectedMask = singleSelection ? selectedObject.GetComponent<FEasyUIMask>() : null;
     }
     private static void Update()
     {
         if (EditorApplication.isCompiling || (!EditorApplication.isPlaying && EditorApplication.isPlayingOrWillChangePlaymode)) return;
         Editors.RemoveWhere(editor => editor == null);
-        Retire.Clear();
-        foreach (FEasyUIMask mask in Previews)
-            if (!CanPreview(mask)) Retire.Add(mask);
-        foreach (FEasyUIMask mask in Retire)
-        { if (mask != null) mask.ReleaseEditorPreview(); Previews.Remove(mask); }
-        foreach (FEasyUIMaskEditor editor in Editors)
+        EnsurePreview(selectedMask);
+        Work.Clear();
+        foreach (Preview preview in Previews.Values) Work.Add(preview);
+        bool repaint = false;
+        // Refresh can rebuild the Inspector and change its Editor registrations.
+        // Iterate object sessions through a reusable work list instead.
+        foreach (Preview preview in Work)
         {
-            FEasyUIMask mask = editor.Mask;
-            if (!CanPreview(mask)) continue;
-            if (mask.ConsumeEditorRefreshRequest()) Request(mask);
-            bool force = Pending.Remove(mask);
-            bool sameStage = mask.targetUI == null || (!EditorUtility.IsPersistent(mask.targetUI)
-                && mask.targetUI.gameObject.scene.IsValid() && mask.targetUI.gameObject.scene.isLoaded
-                && StageUtility.GetStageHandle(mask.targetUI.gameObject).Equals(StageUtility.GetStageHandle(mask.gameObject)));
+            FEasyUIMask mask = preview.Mask;
+            Preview current;
+            if (!Previews.TryGetValue(mask, out current) || current != preview) continue;
+            if (!CanPreview(mask))
+            {
+                Previews.Remove(mask); Pending.Remove(mask);
+                if (mask != null) mask.ReleaseEditorPreview();
+                continue;
+            }
+            bool force = Pending.Remove(mask) | mask.ConsumeEditorRefreshRequest();
             try
             {
-                if (!Application.IsPlaying(mask.gameObject)) Previews.Add(mask);
-                // Playing instances use LateUpdate; Inspector requests must survive until it runs.
-                if (!Application.IsPlaying(mask.gameObject) || force || !sameStage)
-                    mask.RefreshEditorPreview(force, sameStage);
-                if (force || mask.IsPreparing)
-                { EditorApplication.QueuePlayerLoopUpdate(); SceneView.RepaintAll(); editor.Repaint(); }
+                mask.RefreshEditorPreview(force, SameStage(mask));
+                repaint |= force || mask.IsPreparing || preview.Ready != mask.IsReady || preview.Preparing != mask.IsPreparing;
+                preview.Ready = mask.IsReady; preview.Preparing = mask.IsPreparing;
             }
             catch (System.Exception exception) { Debug.LogException(exception, mask); }
         }
+        Requests.Clear();
+        foreach (FEasyUIMask mask in Pending)
+            if (!Previews.ContainsKey(mask)) Requests.Add(mask);
+        foreach (FEasyUIMask mask in Requests)
+        {
+            Pending.Remove(mask);
+            // Actual playing instances retain their LateUpdate path. Inspector
+            // requests queue work without activating the host or its parents.
+            if (!IsAvailable(mask) || !Application.IsPlaying(mask.gameObject)) continue;
+            try { mask.RefreshEditorPreview(true, SameStage(mask)); repaint = true; }
+            catch (System.Exception exception) { Debug.LogException(exception, mask); }
+        }
+        if (repaint)
+        {
+            EditorApplication.QueuePlayerLoopUpdate(); SceneView.RepaintAll();
+            Repaints.Clear();
+            foreach (FEasyUIMaskEditor editor in Editors) if (editor != null) Repaints.Add(editor);
+            foreach (FEasyUIMaskEditor editor in Repaints) if (editor != null) editor.Repaint();
+        }
     }
     private static void RefreshObserved()
-    { foreach (FEasyUIMaskEditor editor in Editors) if (editor != null) Request(editor.Mask); }
+    {
+        Request(selectedMask);
+        foreach (FEasyUIMaskEditor editor in Editors) if (editor != null) Request(editor.Mask);
+    }
     private static void ClearPreviews()
     {
-        foreach (FEasyUIMask mask in Previews) if (mask != null) mask.ReleaseEditorPreview();
-        Previews.Clear(); Pending.Clear();
+        if (clearing) return;
+        clearing = true;
+        try
+        {
+            Retire.Clear();
+            foreach (FEasyUIMask mask in Previews.Keys) Retire.Add(mask);
+            Previews.Clear(); Pending.Clear();
+            foreach (FEasyUIMask mask in Retire) if (mask != null) mask.ReleaseEditorPreview();
+            Retire.Clear();
+        }
+        finally { clearing = false; }
     }
-    private static void SelectionChanged() { ClearPreviews(); RefreshObserved(); }
+    private static void SelectionChanged() { ClearPreviews(); CacheSelection(); EnsurePreview(selectedMask); }
     private static void PlayModeChanged(PlayModeStateChange state)
     {
         ClearPreviews();
-        if (state == PlayModeStateChange.EnteredEditMode || state == PlayModeStateChange.EnteredPlayMode) RefreshObserved();
+        if (state == PlayModeStateChange.EnteredEditMode || state == PlayModeStateChange.EnteredPlayMode)
+        { CacheSelection(); EnsurePreview(selectedMask); RefreshObserved(); }
     }
     private static void Shutdown()
     {

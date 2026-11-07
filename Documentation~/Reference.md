@@ -74,9 +74,9 @@ void Configure(F_EasyUIMask.FEasyUIMask mask, RectTransform image)
 
 屏幕区域 RT 使用线性 RGBA32、Point/Clamp、无 mipmap/MSAA。未降采样时边界对齐屏幕像素网格；尺寸触顶后共同调整两轴纹素步长、区域、尺寸和保护边。CPU 仅查询同提交纹素的 R 通道，边界受离散采样限制，不承诺无限精度。继续使用 RGBA32，尚未引入未经回归的 R8/单通道优化；2048² 双槽 GPU/CPU 数据合计约 64 MiB，不含其他开销。本次 P1 回读中位数约 16.4 ms、最大约 104.76 ms；不承诺固定帧数或零延迟。
 
-精确预览仅对当前选中的活动编辑对象创建独立临时资源，包含 Prefab Stage；不激活禁用对象或跨 Stage 引用，不创建矩形替代预览。取消选择、Stage 变化、禁用、销毁、重载及退出清理。OnValidate 只提交线程安全请求，主线程队列再执行预览与 Graphic 失效操作。临时资源不序列化到场景/Prefab。
+精确预览仅对当前单选的活动编辑对象创建独立临时资源，包含 Prefab Stage；不激活禁用对象或跨 Stage 引用，不创建矩形替代预览。预览会话归属于遮罩对象，Inspector 临时销毁或重新登记不清空已有快照、不强制重采样。编辑对象以根 Canvas 的像素矩形（Overlay）或观察摄像机视口作为尺寸依据，避免窗口/菜单上下文中的全局 Screen 尺寸变化误使结果失效；真实宿主和投影变化仍触发检查。取消选择、Stage 变化、禁用、销毁、重载及退出清理。OnValidate 只提交线程安全请求，主线程队列再执行预览与 Graphic 失效操作。临时资源不序列化到场景/Prefab。
 
-Runtime-created masks must receive serialized package material references through `ConfigureResources`. Instance resources survive in-flight GPU work until completion. The linear RGBA32 screen-region mask uses Point/Clamp sampling, a guard border and a shared downsampling pitch. Two maximum-size GPU/CPU slots cost about 64 MiB. CPU hits read committed bytes only. This P1 run measured a median near 16.4 ms and maximum near 104.76 ms, without a fixed-frame guarantee. Selected active edit/Prefab objects get temporary GPU previews; selection/stage/lifecycle transitions clean them up.
+Runtime-created masks must receive serialized package material references through `ConfigureResources`. Instance resources survive in-flight GPU work until completion. The linear RGBA32 screen-region mask uses Point/Clamp sampling, a guard border and a shared downsampling pitch. Two maximum-size GPU/CPU slots cost about 64 MiB. CPU hits read committed bytes only. This P1 run measured a median near 16.4 ms and maximum near 104.76 ms, without a fixed-frame guarantee. A single selected active edit/Prefab object owns its temporary GPU preview across Inspector replacements without forcing resampling. Edit-mode dimensions come from the root Canvas pixel rect or observer viewport, while actual host/projection changes still invalidate. Selection/stage/lifecycle transitions clean resources up.
 
 ### P1 组件迁移 / Component migration
 

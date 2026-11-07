@@ -16,7 +16,9 @@ P1 已完成双组件源码实现，并在独立源码副本工程执行本节�
 | 真实脚本重载、Domain Reload 开关、全局 Play 下 Prefab Stage 及退出资源清理 | 22 检查，0 失败 |
 | 在途宿主/摄像机变化、刷新重入、身份重建、失效恢复、多实例、softness/嵌套 Stencil | 62 检查，0 失败 |
 | Windows 实际鼠标输入经 EventSystem 派发 | 5 次点击，正反形状内外及外框规则均符合预期 |
-| 用户手动测试：独立场景 R01～R07、P01～P15、L01～L04 | 用户确认 26 项全部通过，无新增问题；P14 切换透视时的瞬时投影警告保留待调查，未修复 |
+| 用户手动测试：独立场景 R01～R07、P01～P15、L01～L04 | 用户确认 26 项全部通过；P14 瞬时投影警告已确认测试切换时序原因，用户接受当前表现、不予修复 |
+
+用户随后发现编辑器精确预览间歇丢失。本次修复稳定编辑对象的宿主尺寸依据，并将预览会话从瞬时 Inspector 生命周期中独立出来；新增 113 项编辑预览专项及 6 项普通 Play/全局 Play 下 Prefab 检查通过，包含实际 GPU 覆盖像素与 CPU 样点一致性、Inspector 更替不重采样、退选和退出资源清理。此批结果与上表历史 386 项分开记录；2026-11-08 用户反馈当前 P1 功能正常，不扩充 UPM 或其他环境的支持声明。
 
 精度样例中同提交 RT/CPU 逐纹素差异为 0；独立参考超过一个有效纹素 L∞ 的差异为 0。四档 120 个稳定帧无提取/回读、测得主线程分配 0 B；1000 次稳定轮询 0 B。100 次启停资源回到零基线。回读中位数约 16.4 ms、本次最大约 104.76 ms；没有固定帧数承诺。2048² RGBA32 双槽 GPU/CPU 数据上限约 64 MiB，不含其他开销。完整驱动显存峰值和 CPU 提交耗时未测。
 
@@ -28,7 +30,9 @@ P1 已完成双组件源码实现，并在独立源码副本工程执行本节�
 
 P1 passed 386 automated checks across functionality, precision/resources, migration, editor previews, reload/lifecycle and scheduling, plus five actual Windows mouse clicks, in isolated source-copy projects on the environment above. The editor readback loop was fixed and retested. Local UPM import fails before compilation with a resolver error, including a retry with full project settings and an absolute package path; source-copy results do not certify UPM installation. Representative dynamic-host tests passed, but arbitrary same-frame script/layout ordering is unverified, so stable host/observer remains the declared boundary. Full acceptance, other platforms and release are pending. Version remains 2.0.0.
 
-The user also confirmed all 26 numbered manual-scene cases passed. A transient projection warning when switching P14 to perspective remains an open development observation; the user reported normal rendering and clicks after the switch. Its cause has not been independently confirmed or fixed.
+The user also confirmed all 26 numbered manual-scene cases passed. The transient P14 perspective-switch projection warning was traced to test-switch timing. The user accepted it without changing the plugin or test case and reported normal stable rendering and clicks.
+
+A later intermittent precision-preview report led to stable edit-mode host dimensions and object-owned preview sessions across Inspector replacements. Another 113 edit-preview checks and six ordinary Play/Prefab checks passed, including actual GPU coverage pixels, matching CPU samples and resource cleanup. These are separate from the historical 386 checks. On 2026-11-08, the user reported normal P1 functionality; UPM and release acceptance remain incomplete.
 
 ## 单一包 / One package
 
