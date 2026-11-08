@@ -4,6 +4,26 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+## [Unreleased]
+
+### Added
+
+- Dedicated `FEasyUIMask` precision component for one standard Simple Image's actual mesh, UV and texture Alpha, with asynchronous shared rendering/hit snapshots, explicit material resource configuration and selected-object GPU previews.
+- Package extraction/coverage materials and shaders, precision Inspector status/quality/error reporting, host mapping invalidation, exact input comparison, material/atlas notifications and callback-safe resource ownership.
+
+### Changed
+
+- Rename the 2.0 rectangle component to `FEasyUIRectMask`, preserving its script GUID, serialized rectangle fields, helper ownership and Scene editor. Audit consumer type names: the old `FEasyUIMask` name now means precision.
+- Remove the P0 experiment switch, target-local probe, public diagnostic fields and P0 product menus. Precision rejects Sliced/Filled/Tiled, split Alpha and custom materials/effects; target ancestor visibility clipping is excluded.
+
+### Fixed
+
+- Retain precision edit/Prefab previews across Inspector replacements without forcing resampling, and use Canvas/observer dimensions instead of Editor-context Screen dimensions to detect host changes. Real selection, stage and lifecycle transitions still release preview resources.
+
+- Advance edit-mode precision readback explicitly through the editor loop, including in-flight cleanup after deselection; retain the Player command-buffer readback path.
+
+- Retain the P0 screen-region grid alignment and uniform downsampling pitch in the new precision component; representative P1 precision regression passed.
+
 ## [2.0.0] - 2026-10-28
 
 ### Fixed

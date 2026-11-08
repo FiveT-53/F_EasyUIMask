@@ -2,7 +2,102 @@
 
 [中文入门](../README.md) · [English quick start](../README_en.md)
 
-## 区域与交互规则
+## P1 精确组件 FEasyUIMask / Precision component
+
+当前双组件实现尚未发布新的版本标签，包版本仍为 2.0.0。已执行独立源码副本的编译、代表性 Player、精度/资源、迁移和精确预览检查；2026-11-08 用户另确认 UPM 安装、构建运行及功能正常，并授权合并。实际验证范围及反馈来源见 [Release](Release.md)，不扩大到未测平台和用例。矩形组件说明见下方 `FEasyUIRectMask`。
+
+This implementation has source-copy compilation, representative Player, precision/resource, migration and preview results. On 2026-11-08, the user also confirmed successful UPM installation, build/run and normal functionality, and authorized merging. See [Release](Release.md) for scope and evidence sources. A new release tag is still pending and the package version remains 2.0.0; rectangle behavior belongs to `FEasyUIRectMask`.
+
+### 目标与形状 / Target and shape
+
+- `targetUI` 必须是自身带有标准 `UnityEngine.UI.Image` 的 RectTransform，Image 类型必须为 Simple，且 Sprite 存在。不接受派生 Image、自定义材质或 IMeshModifier；Sliced、Filled、Tiled、RawImage、TMP、分离 Alpha、多目标及子节点组合不在 P1 范围内。
+- 使用 Canvas 重建后的实际网格与 UV0，保留透视插值，支持旋转、镜像、非等比缩放、Preserve Aspect、Sprite Mesh、凹形和内部孔洞的提取设计。不可读源纹理通过 GPU 采样，无需读取源纹理 CPU 数据。
+- 纹理采样 Alpha >= `alphaThreshold` 定义二值形状。遵循源纹理的采样设置；忽略 Image 颜色、顶点 Alpha 和 CanvasGroup Alpha。更换 Sprite/图集绑定后使用当次实际纹理和 UV。
+- 目标祖先 Mask/RectMask2D 的可见裁剪不参与提取，不能称为完整屏幕最终可见形状。遮罩自身 Shader 保留 UGUI Stencil、矩形裁剪、softness 和 AlphaClip 路径；自身 Stencil、嵌套 Stencil、RectMask2D 与 softness 已有代表性验证，不扩展到任意裁剪组合。视觉 softness 不改变标准 UGUI 祖先射线过滤规则。
+- 正向覆盖形状，反向覆盖外框内形状以外的部分；遮罩外框以外始终无显示和命中。颜色透明度与 `raycastTarget` 独立，洞口放行仅表示本遮罩不拦截，不保证下层收到事件。
+
+Only one standard Simple Image is accepted. The actual rebuilt mesh, UV and sampled texture Alpha define the binary contour, including holes. Tint, vertex/CanvasGroup Alpha and target ancestor visibility clipping are ignored. Source Read/Write is unnecessary. Unsupported inputs invalidate rather than fall back to a rectangle. Representative own Stencil, nested Stencil, RectMask2D and softness paths passed P1 checks; this does not certify arbitrary nesting or custom masks.
+
+### 公共 API / Public API
+
+| 字段或属性 / Member | 默认或含义 / Default or meaning |
+| --- | --- |
+| `targetUI: RectTransform` | null；绑定目标自身 / target itself |
+| `realTimeUpdate: bool` | false；启用时检查目标状态、投影及脏通知 / observe target changes |
+| `invertMask: bool` | false；true 为外围覆盖 / cover the outside |
+| `alphaThreshold: float` | 0.5；有效范围 [0.001, 1] / valid threshold range |
+| `maxTextureSize: int` | 2048；有效上限钳制到 16～min(2048, 设备上限) / clamped size cap |
+| `FailureReason: string` | 最近失败原因，只读 / last failure, read-only |
+| `IsReady: bool` | 存在完整已提交快照 / a complete snapshot is committed |
+| `IsPreparing: bool` | 有在途回读，可能同时已就绪 / a readback is in flight |
+| `EffectiveTexelSize: Vector2` | 已提交纹素的屏幕像素尺寸，未就绪为零 / screen pixels per committed texel |
+
+| 方法 / Method | 契约 / Contract |
+| --- | --- |
+| `Init()` | 幂等准备活动播放实例的私有状态，不激活或关闭宿主，不要求已有 Canvas / prepare an active playing instance without activation |
+| `ConfigureResources(Material extraction, Material coverage)` | 分配正式包材质模板，撤销旧资源并请求重采样，不修改原材质 / configure templates and request resampling |
+| `RefreshMask()` | 排队并重新采样同引用纹理，可激活自身，不激活父节点或启用组件 / queue a fresh sample, activating only this object if needed |
+| `Close()` | 清空结果并停用整个宿主，保留全部配置 / clear state and deactivate the host, retaining configuration |
+
+没有 `areaSelectMode`、`targetOffset`、`targetSize` 或 `p0*` 字段。不保留实验开关、局部对照探针和同名矩形别名。
+
+### 提交、失效与刷新 / Commit and refresh
+
+首份异步回读完成前不显示、不命中。GPU RT、CPU RGBA32 数据、模式、外框和投影一起提交。普通目标变化等待期间保留上一份完整结果；连续变化按生成顺序完成，不因每帧都有新变换而永远丢弃全部结果。换目标/身份、关闭、失效、销毁或重载使过期回调失去提交资格，过期错误也不能覆盖新状态。
+
+宿主 RectTransform、外框、根 Canvas、观察摄像机/viewport/投影/裁剪范围等结构变化触发旧结果清空并重新准备，不继续保留映射失效的快照。代码在结构回调、LateUpdate、Canvas 绘制前和精确射线查询时检查宿主；代表性在途宿主/摄像机变化已通过同帧失效与恢复后画面对照，任意脚本/布局时序尚未穷尽，**当前支持声明限于稳定宿主和观察投影**。
+
+缺少目标、Sprite、正式资源、不支持配置、无效变换或投影：显示和点击均为空，保留宿主与配置，通过 `FailureReason` 和 Inspector/运行时警告暴露错误。禁用目标、全透明图和完全越界是有效空形状：正向空、反向整个外框。无效配置不会反向覆盖整个外框。
+
+显式刷新与实时变化请求在 LateUpdate 合并，Canvas 更新期间新增请求保留。实时关闭后不轮询目标层级；字段赋值和纹理内容变化须显式刷新，宿主结构检查仍运行。实时开启时比较必要的实际状态值，订阅网格/材质脏通知与图集注册；同步纹理 updateCount，但外部原生纹理写入等无法检测的内容变更仍应主动刷新。可恢复的资源/网格/回读失败在实时开启时限频重试，修复无效配置后按变化或显式刷新恢复。
+
+First readiness is empty. Rendering and CPU hits commit together; pending target changes retain the previous complete snapshot. Epochs reject stale identity/lifecycle/error callbacks. Host mapping changes invalidate immediately at the implemented observation points. Representative in-flight host/camera mutations passed same-frame invalidation and recovered rendering checks. Arbitrary script/layout ordering is unverified, so the declared scope still requires a stable host/observer. Disabled, transparent and offscreen targets are valid empty; invalid input clears both outputs even when inverted. Explicit refresh always resamples, including unchanged texture references. Real-time mode combines exact state comparison with dirty/atlas notifications; real-time off does not poll the target hierarchy.
+
+### 资源、精度与延迟 / Resources, precision and delay
+
+包内 `PrecisionAlphaExtraction.mat`、`PrecisionCoverage.mat` 序列化引用 Shader；脚本 importer 的 defaultReferences 为新增编辑器组件赋值。Inspector 的资源恢复按钮通过序列化事务修改引用。运行时创建组件必须自行持有序列化资源引用并初始化，例如：
+
+```csharp
+[SerializeField] private Material extraction; // PrecisionAlphaExtraction.mat
+[SerializeField] private Material coverage;   // PrecisionCoverage.mat
+
+void Configure(F_EasyUIMask.FEasyUIMask mask, RectTransform image)
+{
+    mask.ConfigureResources(extraction, coverage);
+    mask.targetUI = image;
+    mask.invertMask = true;
+    mask.RefreshMask();
+}
+```
+
+不依赖 Shader.Find、Resources 隐式加载或 P0 工具菜单。每实例只修改自己生成的 Material、Mesh、RT 和字节数组，不改目标层级、共享材质或原图。关闭立即撤销提交资格，在途提取资源保留到 GPU 回调结束；域重载/退出可等待该实例 GPU 队列排空。普通刷新和每次点击均不等待 GPU。
+
+屏幕区域 RT 使用线性 RGBA32、Point/Clamp、无 mipmap/MSAA。未降采样时边界对齐屏幕像素网格；尺寸触顶后共同调整两轴纹素步长、区域、尺寸和保护边。CPU 仅查询同提交纹素的 R 通道，边界受离散采样限制，不承诺无限精度。继续使用 RGBA32，尚未引入未经回归的 R8/单通道优化；2048² 双槽 GPU/CPU 数据合计约 64 MiB，不含其他开销。本次 P1 回读中位数约 16.4 ms、最大约 104.76 ms；不承诺固定帧数或零延迟。
+
+精确预览仅对当前单选的活动编辑对象创建独立临时资源，包含 Prefab Stage；不激活禁用对象或跨 Stage 引用，不创建矩形替代预览。预览会话归属于遮罩对象，Inspector 临时销毁或重新登记不清空已有快照、不强制重采样。编辑对象以根 Canvas 的像素矩形（Overlay）或观察摄像机视口作为尺寸依据，避免窗口/菜单上下文中的全局 Screen 尺寸变化误使结果失效；真实宿主和投影变化仍触发检查。取消选择、Stage 变化、禁用、销毁、重载及退出清理。OnValidate 只提交线程安全请求，主线程队列再执行预览与 Graphic 失效操作。临时资源不序列化到场景/Prefab。
+
+Runtime-created masks must receive serialized package material references through `ConfigureResources`. Instance resources survive in-flight GPU work until completion. The linear RGBA32 screen-region mask uses Point/Clamp sampling, a guard border and a shared downsampling pitch. Two maximum-size GPU/CPU slots cost about 64 MiB. CPU hits read committed bytes only. This P1 run measured a median near 16.4 ms and maximum near 104.76 ms, without a fixed-frame guarantee. A single selected active edit/Prefab object owns its temporary GPU preview across Inspector replacements without forcing resampling. Edit-mode dimensions come from the root Canvas pixel rect or observer viewport, while actual host/projection changes still invalidate. Selection/stage/lifecycle transitions clean resources up.
+
+### P1 组件迁移 / Component migration
+
+旧 `Runtime/FEasyUIMask.cs` 的 GUID 随文件移动到 `FEasyUIRectMask.cs`，原矩形字段名、类型、枚举值和 helper owner 字段名保留，owner 的类型改为矩形组件。新精确组件使用与旧矩形不同的脚本 GUID，不按旧场景实验字段自动转换。从 v2.0.0 导入的场景、Prefab、Variant、对象引用、owner、UnityEvent 和显式迁移类型后的消费脚本夹具已通过 32 项检查，原始 RuntimeOnly UnityEvent 在真实 Play Mode 下另通过 9 项调用检查，不能替代任意业务工程迁移审计。
+
+```csharp
+// Old rectangle consumer -> P1 rectangle consumer
+[SerializeField] private F_EasyUIMask.FEasyUIRectMask rectangle;
+void ShowRectangle(RectTransform target)
+{
+    rectangle.areaSelectMode = F_EasyUIMask.FEasyUIRectMask.AreaSelectMode.UITarget;
+    rectangle.targetUI = target;
+    rectangle.RefreshMask();
+}
+```
+
+审计 `FEasyUIMask` 字段、方法参数、GetComponent/泛型参数、继承、反射字符串和程序集限定类型名。共用的 targetUI/RefreshMask 等调用仍可能编译，但会指向不同形状语义。必须按用途选择组件，不宣称无损源码兼容。P0 场景随旧 GUID 成为矩形组件，需要精确功能时在测试副本中显式添加新组件并迁移目标/阈值/质量及资源，不批量改写业务资产。
+
+The original script GUID moves with the rectangle component. Audit fields, arguments, GetComponent/generics, inheritance and reflection names. Shared member names may still compile while changing semantics. Representative v2.0.0 scene/Prefab/variant/reference/UnityEvent/owner fixtures passed after explicitly migrating consumer types; arbitrary business consumers still require an audit. P0 scenes become rectangle instances through their old script reference; precision requires explicit new components in test copies.
+
+## 矩形组件 FEasyUIRectMask：区域与交互规则
 
 目标原始矩形为 T，本体当前 RectTransform 外框为 O，绘制和命中共用交集 I = O ∩ T；裁剪结果不覆盖原始 T。
 
@@ -59,7 +154,7 @@ Inspector、手柄、重新选择及 Undo/Redo 共用主线程去重刷新队列
 
 ---
 
-## Geometry and interaction
+## Rectangle component FEasyUIRectMask: geometry and interaction
 
 Let T be the original target rectangle, O the current mask RectTransform, and I = O ∩ T. Rendering and hit testing share I without overwriting T.
 
