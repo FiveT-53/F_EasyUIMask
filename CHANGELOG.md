@@ -4,7 +4,11 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
-## [Unreleased]
+## [3.0.0] - 2026-11-08
+
+### Breaking changes
+
+- The old rectangle component is now `FEasyUIRectMask`. Its script GUID and serialized rectangle settings are preserved, but rectangle consumer code must migrate to the new type. The `FEasyUIMask` name now refers to the precision component; some existing calls may still compile with different semantics.
 
 ### Added
 
@@ -13,7 +17,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ### Changed
 
-- Rename the 2.0 rectangle component to `FEasyUIRectMask`, preserving its script GUID, serialized rectangle fields, helper ownership and Scene editor. Audit consumer type names: the old `FEasyUIMask` name now means precision.
+- Preserve rectangle helper ownership and Scene editing under `FEasyUIRectMask`.
 - Remove the P0 experiment switch, target-local probe, public diagnostic fields and P0 product menus. Precision rejects Sliced/Filled/Tiled, split Alpha and custom materials/effects; target ancestor visibility clipping is excluded.
 
 ### Fixed

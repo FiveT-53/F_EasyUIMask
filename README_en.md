@@ -17,7 +17,7 @@ Overlay masks for Unity UGUI, designed for onboarding guides, UI highlights and 
 | `FEasyUIRectMask` | A rectangular cutout around a button or panel, or an area with a manually chosen position and size |
 | `FEasyUIMask` | A cutout following one Simple Image, including circles, stars, concave outlines and transparent holes |
 
-The current source includes both components. A new release tag has not been published, and the package version remains 2.0.0 for now. Read [Upgrading from 2.0.0](#upgrading-from-200) before upgrading an existing project.
+**3.0.0** includes both components. Read [Upgrading from 2.0.0](#upgrading-from-200) before upgrading an existing project, and update code that refers to the old rectangle component.
 
 ## Requirements
 
@@ -32,15 +32,15 @@ Tuanjie compatibility testing and adaptation are planned for a future release. T
 
 Install Git and check that `git --version` works. Restart Unity Hub and the Editor after installing Git.
 
-Open **Window → Package Manager → ＋ → Add package from git URL** and enter this link to install the verified commit containing both components:
+Open **Window → Package Manager → ＋ → Add package from git URL** and enter this link to install **3.0.0**:
 
 ```text
-https://github.com/FiveT-53/F_EasyUIMask.git#db691f136199e7e6cf69b30f161c2240f71d413a
+https://github.com/FiveT-53/F_EasyUIMask.git#v3.0.0
 ```
 
 Wait for compilation to finish. No manual source download or Assets copy is needed.
 
-Once a new version is released, use its official tag. The existing `#v2.0.0` tag still installs the old rectangle version without the precision component; see its [v2.0.0 README](https://github.com/FiveT-53/F_EasyUIMask/blob/v2.0.0/README_en.md) for instructions. The `#unity` and `#tuanjie` installation links are no longer used. See [release maintenance](Documentation~/Release.md) for branch and version history.
+Use the pinned release tag above for installation. The `#v2.0.0` tag remains available for the old rectangle version without the precision component; see its [v2.0.0 README](https://github.com/FiveT-53/F_EasyUIMask/blob/v2.0.0/README_en.md) for instructions. The `#unity` and `#tuanjie` installation links are no longer used. See [release maintenance](Documentation~/Release.md) for branch and version history.
 
 If you previously copied this plugin into your project, back up and remove that copy first to avoid duplicate types or assemblies. To upgrade, add the new release's Git URL in Package Manager; pinned releases do not update automatically.
 

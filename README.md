@@ -17,7 +17,7 @@
 | `FEasyUIRectMask` | 为按钮或面板留出矩形区域，或手动指定洞口的位置和大小 |
 | `FEasyUIMask` | 沿单个 Simple Image 的轮廓镂空，适合圆形、星形、凹形和带透明孔洞的图标 |
 
-当前源码包含这两个组件，尚未发布新的版本标签，包版本暂保留为 2.0.0。从已发布版本升级时，请先阅读下方的[升级说明](#从-200-升级)。
+**3.0.0** 提供这两个组件。从 2.0.0 升级时，请先阅读下方的[升级说明](#从-200-升级)，调整原有矩形遮罩的脚本引用。
 
 ## 环境要求
 
@@ -32,15 +32,15 @@
 
 确保电脑已安装 Git，且 `git --version` 可用。新安装 Git 后，请重启 Unity Hub 和编辑器。
 
-在 **Window → Package Manager → ＋ → Add package from git URL** 中输入以下链接，安装当前双组件版本的已验证提交：
+在 **Window → Package Manager → ＋ → Add package from git URL** 中输入以下链接，安装 **3.0.0**：
 
 ```text
-https://github.com/FiveT-53/F_EasyUIMask.git#db691f136199e7e6cf69b30f161c2240f71d413a
+https://github.com/FiveT-53/F_EasyUIMask.git#v3.0.0
 ```
 
 等待编译完成即可使用，无需下载源码或复制到 Assets。
 
-新版本发布后，可改用对应的正式版本标签。已发布的 `#v2.0.0` 仍是旧矩形版，不包含这里的精确遮罩；旧版使用方式见 [v2.0.0 README](https://github.com/FiveT-53/F_EasyUIMask/blob/v2.0.0/README.md)。`#unity`、`#tuanjie` 安装链接已停止使用，分支与历史版本说明见[发布维护说明](Documentation~/Release.md)。
+推荐使用上方的固定版本标签安装。`#v2.0.0` 保留为旧矩形版，不包含这里的精确遮罩；旧版使用方式见 [v2.0.0 README](https://github.com/FiveT-53/F_EasyUIMask/blob/v2.0.0/README.md)。`#unity`、`#tuanjie` 安装链接已停止使用，分支与历史版本说明见[发布维护说明](Documentation~/Release.md)。
 
 如果工程中已有手动复制的插件，请先备份并移除那份插件，避免重复类型或程序集。升级时，在 Package Manager 中添加新版本的 Git URL 即可；固定版本不会自动更新。
 

@@ -2,11 +2,11 @@
 
 [中文入门](../README.md) · [English quick start](../README_en.md)
 
-## P1 精确组件 FEasyUIMask / Precision component
+## 3.0.0 精确组件 FEasyUIMask / Precision component
 
-当前双组件实现尚未发布新的版本标签，包版本仍为 2.0.0。已执行独立源码副本的编译、代表性 Player、精度/资源、迁移和精确预览检查；2026-11-08 用户另确认 UPM 安装、构建运行及功能正常，并授权合并。实际验证范围及反馈来源见 [Release](Release.md)，不扩大到未测平台和用例。矩形组件说明见下方 `FEasyUIRectMask`。
+本文对应 **3.0.0**，提供 `FEasyUIMask` 精确组件与 `FEasyUIRectMask` 矩形组件。已执行独立源码副本的编译、代表性 Player、精度/资源、迁移和精确预览检查；2026-11-08 用户另确认 UPM 安装、构建运行及功能正常。实际验证范围及反馈来源见 [Release](Release.md)，不扩大到未测平台和用例。矩形组件说明见下方 `FEasyUIRectMask`。
 
-This implementation has source-copy compilation, representative Player, precision/resource, migration and preview results. On 2026-11-08, the user also confirmed successful UPM installation, build/run and normal functionality, and authorized merging. See [Release](Release.md) for scope and evidence sources. A new release tag is still pending and the package version remains 2.0.0; rectangle behavior belongs to `FEasyUIRectMask`.
+This reference covers **3.0.0**, with `FEasyUIMask` for precision and `FEasyUIRectMask` for rectangles. Source-copy compilation, representative Player, precision/resource, migration and preview checks were performed. On 2026-11-08, the user also confirmed successful UPM installation, build/run and normal functionality. See [Release](Release.md) for scope and evidence sources.
 
 ### 目标与形状 / Target and shape
 

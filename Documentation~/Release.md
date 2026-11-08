@@ -1,8 +1,8 @@
 # 发布维护 / Release maintenance
 
-## P1 开发状态 / Development status (2026-11-08)
+## 3.0.0 发布与验证范围 / Release and verification scope (2026-11-08)
 
-P1 已完成双组件源码实现及本节所列验证。2026-11-08 用户确认 UPM 安装、构建运行测试无误、功能正常，并授权合并。包版本仍为 2.0.0，新的正式版本标签尚未发布；已发布的 v2.0.0 仍是矩形版。下方 2.0/P0 历史记录不能继承为 P1 验收结论。
+**3.0.0** 提供矩形组件 `FEasyUIRectMask` 与单个 Simple Image 精确组件 `FEasyUIMask`，发布标签为 `v3.0.0`。本版已完成原 P1 阶段实现及本节所列验证；2026-11-08 用户确认 UPM 安装、构建运行测试无误、功能正常，并授权合并和发布 3.0。`v2.0.0` 保留为旧矩形版，旧类型调用方需按迁移说明更新。下方 2.0/P0 历史记录不能继承为新功能的验收结论。
 
 Agent 自动化验证环境：Unity **2022.3.62f3c1 (1623fc0bbb97)**、Built-in、Gamma、D3D11、Windows x64 Mono Development Player，RTX 3070 Laptop GPU。独立工程 `D:\UnityProject\FEasyUIMask.P1` 使用 `Assets` 源码副本及 `-noUpm`；没有覆盖原 P0 或业务工程。用户随后执行的 UPM/构建运行测试单独登记，不将该源码副本环境当作其新增实测配置。
 
@@ -25,13 +25,13 @@ Agent 自动化验证环境：Unity **2022.3.62f3c1 (1623fc0bbb97)**、Built-in�
 
 **UPM 后续验收已由用户确认通过**：本轮提供的固定 Git 安装入口为 `db691f136199e7e6cf69b30f161c2240f71d413a`，用户随后明确反馈“UPM 安装和构建运行测试无误，功能也正常，可以进行合并”。该结果独立于上述源码副本验证。用户未另附锁文件、完整引擎版本或构建后端日志，不将反馈扩大为其他平台或特定后端的验证。
 
-早期 agent 本地 UPM 尝试曾遇到包解析器报 `The "path" argument must be of type string. Received undefined`，作为历史环境问题保留，现不再列为本次合并的未通过项。包默认资源和 UGUI 所需 Shader 变体另有既有源码副本 Player 构建运行证据。新版本发布前仍需核对最终发布提交、包版本及新标签安装入口。
+早期 agent 本地 UPM 尝试曾遇到包解析器报 `The "path" argument must be of type string. Received undefined`，作为历史环境问题保留，不再列为本版的未通过项。包默认资源和 UGUI 所需 Shader 变体另有既有源码副本 Player 构建运行证据。本版发布整理仅更新版本与文档，不修改已验收的 Runtime、Editor 或资源行为。
 
 原 P0 工程含 Assets/本地包副本及原型材质；本轮未改动它。后续复用前须核对重复 GUID，保留其测试资产。包内正式材质沿用 Unity 已生成的 P0 材质及 meta；精确脚本使用原型 partial 的独立 GUID，旧矩形脚本和 Shader 移动保留各自 GUID。矩形 GUID 的场景/Prefab 迁移已在独立夹具工程核对，任意业务消费脚本仍须按用途迁移类型。
 
 宿主位置/旋转/缩放/外框，以及摄像机 view/projection/viewport 的代表性在途变化用例已通过同帧射线失效和恢复后画面对照；尚未证明任意脚本执行顺序、动画与自动布局组合的同帧时序。因此当前支持声明仍限于稳定宿主/观察投影，不自动扩大边界。完整矩形 Inspector/Scene 手柄人工回归、任意业务交互、真实 GPU 故障注入、压缩图集、其他平台/管线/API/Unity 版本及团结未获得新增验证；用户跳过的关闭 Domain Reload 手动路线保持跳过。以上未测范围不因本次合并自动转为支持声明。
 
-P1 passed 386 automated checks across functionality, precision/resources, migration, editor previews, reload/lifecycle and scheduling, plus five actual Windows mouse clicks, in isolated source-copy projects on the environment above. On 2026-11-08, following the supplied Git URL pinned to `db691f136199e7e6cf69b30f161c2240f71d413a`, the user reported successful UPM installation, build/run and normal functionality, and authorized merging. This is user-reported acceptance, without additional lock-file or environment logs. Earlier agent-side UPM resolver failures remain historical environment observations rather than a current merge blocker. Arbitrary same-frame script/layout ordering is unverified; stable host/observer remains the declared boundary. A new version and release tag are pending; the package version remains 2.0.0.
+**3.0.0** is published as `v3.0.0`. Its P1 implementation passed 386 automated checks across functionality, precision/resources, migration, editor previews, reload/lifecycle and scheduling, plus five actual Windows mouse clicks, in isolated source-copy projects on the environment above. On 2026-11-08, following the supplied Git URL pinned to `db691f136199e7e6cf69b30f161c2240f71d413a`, the user reported successful UPM installation, build/run and normal functionality, and authorized merging and releasing 3.0. This is user-reported acceptance, without additional user-provided environment logs. Earlier agent-side UPM resolver failures remain historical observations. Arbitrary same-frame script/layout ordering is unverified; stable host/observer remains the declared boundary. Release preparation changes the version and documentation without changing the accepted implementation or assets.
 
 The user also confirmed all 26 numbered manual-scene cases passed. The transient P14 perspective-switch projection warning was traced to test-switch timing. The user accepted it without changing the plugin or test case and reported normal stable rendering and clicks.
 
@@ -39,9 +39,9 @@ A later intermittent precision-preview report led to stable edit-mode host dimen
 
 ## 单一包 / One package
 
-后续仅维护 `main`，同时维护源码和完整 UPM 包，通过正式版本标签发布。保留所有资源及文件夹的 meta，新增资源首次导入时生成并提交。不要定期删除或重建 GUID。旧版本由 `v1.0.0*` 标签及对应 GitHub Release 保留；旧开发快照由附注标签 `archive/unity-final`、`archive/tuanjie-final` 保留，非正式发行版本。`unity`、`tuanjie` 分支已删除，`#unity`、`#tuanjie` 安装链接停止使用。正式发布后使用对应版本标签；当前双组件版本的固定提交入口见 README，`#v2.0.0` 仅用于旧矩形版。
+后续仅维护 `main`，同时维护源码和完整 UPM 包，通过正式版本标签发布。保留所有资源及文件夹的 meta，新增资源首次导入时生成并提交。不要定期删除或重建 GUID。旧版本由 `v1.0.0*` 标签及对应 GitHub Release 保留；旧开发快照由附注标签 `archive/unity-final`、`archive/tuanjie-final` 保留，非正式发行版本。`unity`、`tuanjie` 分支已删除，`#unity`、`#tuanjie` 安装链接停止使用。当前双组件版使用 `#v3.0.0`，`#v2.0.0` 仅用于旧矩形版。
 
-Maintain only `main`, whose repository root is the complete UPM package, and publish through official version tags. Commit metadata with assets and preserve GUIDs. The `v1.0.0*` tags and their GitHub Releases preserve old versions; the annotated `archive/unity-final` and `archive/tuanjie-final` tags preserve development snapshots, not official releases. The `unity` and `tuanjie` branches have been deleted. Stop using `#unity` and `#tuanjie` installation URLs. Use the appropriate version tag after release; until then, use the pinned two-component commit in the README. The `#v2.0.0` tag installs only the old rectangle version.
+Maintain only `main`, whose repository root is the complete UPM package, and publish through official version tags. Commit metadata with assets and preserve GUIDs. The `v1.0.0*` tags and their GitHub Releases preserve old versions; the annotated `archive/unity-final` and `archive/tuanjie-final` tags preserve development snapshots, not official releases. The `unity` and `tuanjie` branches have been deleted. Stop using `#unity` and `#tuanjie` installation URLs. Install the two-component release with `#v3.0.0`; `#v2.0.0` installs only the old rectangle version.
 
 ## 发布步骤 / Release steps
 
@@ -50,7 +50,7 @@ Maintain only `main`, whose repository root is the complete UPM package, and pub
 3. 在声明支持的编辑器中验证编译、运行时、Inspector/Prefab 和失败恢复；不要宣称尚未验证的引擎兼容。
 4. 提交并推送 main。用没有 Assets/本地/嵌入插件副本的新工程，通过远端 HTTPS Git URL 安装。
 5. 检查 packages-lock.json 中 source=git、URL 和提交哈希；验证依赖、组件、Inspector、重启后导入和代表功能。
-6. 验证通过后在该提交创建不可变版本标签（如 v2.0.0，与 package.json 一致），推送标签，README 提供固定版本安装链接。不要移动已发布标签。
+6. 验证通过后在该提交创建不可变版本标签（如 v3.0.0，与 package.json 一致），推送标签，README 提供固定版本安装链接。不要移动已发布标签。
 7. 用户更新分支包时重新添加同一 Git URL；固定标签用户主动切换新标签。不要要求用户清空整个 Library/锁文件。
 
 PackageCache 是安装结果，不是源码修改位置。UPM Git 安装需要 Git 和网络，但不需要用户手动下载本包。团结必须用实际团结编辑器验证后再加入支持矩阵。
