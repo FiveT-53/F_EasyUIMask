@@ -4,16 +4,16 @@
 
 ## P1 精确组件 FEasyUIMask / Precision component
 
-本分支未发布，包版本仍为 2.0.0。实现后已执行独立源码副本的编译、代表性 Player、精度/资源、迁移和精确预览检查；完整验收未结束，UPM 导入受环境故障阻塞。以下行为的实际通过范围以 [Release](Release.md) 为准，不扩大到未测平台和用例。矩形组件说明见下方 `FEasyUIRectMask`。
+当前双组件实现尚未发布新的版本标签，包版本仍为 2.0.0。已执行独立源码副本的编译、代表性 Player、精度/资源、迁移和精确预览检查；2026-11-08 用户另确认 UPM 安装、构建运行及功能正常，并授权合并。实际验证范围及反馈来源见 [Release](Release.md)，不扩大到未测平台和用例。矩形组件说明见下方 `FEasyUIRectMask`。
 
-This unreleased implementation has source-copy compilation, representative Player, precision/resource, migration and preview results. Full acceptance is incomplete and UPM import is blocked. See [Release](Release.md) for verified scope. Version remains 2.0.0; rectangle behavior belongs to `FEasyUIRectMask`.
+This implementation has source-copy compilation, representative Player, precision/resource, migration and preview results. On 2026-11-08, the user also confirmed successful UPM installation, build/run and normal functionality, and authorized merging. See [Release](Release.md) for scope and evidence sources. A new release tag is still pending and the package version remains 2.0.0; rectangle behavior belongs to `FEasyUIRectMask`.
 
 ### 目标与形状 / Target and shape
 
 - `targetUI` 必须是自身带有标准 `UnityEngine.UI.Image` 的 RectTransform，Image 类型必须为 Simple，且 Sprite 存在。不接受派生 Image、自定义材质或 IMeshModifier；Sliced、Filled、Tiled、RawImage、TMP、分离 Alpha、多目标及子节点组合不在 P1 范围内。
 - 使用 Canvas 重建后的实际网格与 UV0，保留透视插值，支持旋转、镜像、非等比缩放、Preserve Aspect、Sprite Mesh、凹形和内部孔洞的提取设计。不可读源纹理通过 GPU 采样，无需读取源纹理 CPU 数据。
 - 纹理采样 Alpha >= `alphaThreshold` 定义二值形状。遵循源纹理的采样设置；忽略 Image 颜色、顶点 Alpha 和 CanvasGroup Alpha。更换 Sprite/图集绑定后使用当次实际纹理和 UV。
-- 目标祖先 Mask/RectMask2D 的可见裁剪不参与提取，不能称为完整屏幕最终可见形状。遮罩自身 Shader 保留 UGUI Stencil、矩形裁剪、softness 和 AlphaClip 路径，实际效果待 P1 验收。视觉 softness 不改变标准 UGUI 祖先射线过滤规则。
+- 目标祖先 Mask/RectMask2D 的可见裁剪不参与提取，不能称为完整屏幕最终可见形状。遮罩自身 Shader 保留 UGUI Stencil、矩形裁剪、softness 和 AlphaClip 路径；自身 Stencil、嵌套 Stencil、RectMask2D 与 softness 已有代表性验证，不扩展到任意裁剪组合。视觉 softness 不改变标准 UGUI 祖先射线过滤规则。
 - 正向覆盖形状，反向覆盖外框内形状以外的部分；遮罩外框以外始终无显示和命中。颜色透明度与 `raycastTarget` 独立，洞口放行仅表示本遮罩不拦截，不保证下层收到事件。
 
 Only one standard Simple Image is accepted. The actual rebuilt mesh, UV and sampled texture Alpha define the binary contour, including holes. Tint, vertex/CanvasGroup Alpha and target ancestor visibility clipping are ignored. Source Read/Write is unnecessary. Unsupported inputs invalidate rather than fall back to a rectangle. Representative own Stencil, nested Stencil, RectMask2D and softness paths passed P1 checks; this does not certify arbitrary nesting or custom masks.

@@ -1,10 +1,10 @@
 # 发布维护 / Release maintenance
 
-## P1 开发状态 / Development status (2026-11-07)
+## P1 开发状态 / Development status (2026-11-08)
 
-P1 已完成双组件源码实现，并在独立源码副本工程执行本节所列验证。包版本仍为 2.0.0，不代表已发布版本包含精确组件。下方 2.0/P0 历史记录不能继承为 P1 验收结论。
+P1 已完成双组件源码实现及本节所列验证。2026-11-08 用户确认 UPM 安装、构建运行测试无误、功能正常，并授权合并。包版本仍为 2.0.0，新的正式版本标签尚未发布；已发布的 v2.0.0 仍是矩形版。下方 2.0/P0 历史记录不能继承为 P1 验收结论。
 
-本轮验证环境：Unity **2022.3.62f3c1 (1623fc0bbb97)**、Built-in、Gamma、D3D11、Windows x64 Mono Development Player，RTX 3070 Laptop GPU。独立工程 `D:\UnityProject\FEasyUIMask.P1` 使用 `Assets` 源码副本及 `-noUpm`；没有覆盖原 P0 或业务工程。
+Agent 自动化验证环境：Unity **2022.3.62f3c1 (1623fc0bbb97)**、Built-in、Gamma、D3D11、Windows x64 Mono Development Player，RTX 3070 Laptop GPU。独立工程 `D:\UnityProject\FEasyUIMask.P1` 使用 `Assets` 源码副本及 `-noUpm`；没有覆盖原 P0 或业务工程。用户随后执行的 UPM/构建运行测试单独登记，不将该源码副本环境当作其新增实测配置。
 
 | 已执行组 | 结果 |
 | --- | --- |
@@ -17,28 +17,31 @@ P1 已完成双组件源码实现，并在独立源码副本工程执行本节�
 | 在途宿主/摄像机变化、刷新重入、身份重建、失效恢复、多实例、softness/嵌套 Stencil | 62 检查，0 失败 |
 | Windows 实际鼠标输入经 EventSystem 派发 | 5 次点击，正反形状内外及外框规则均符合预期 |
 | 用户手动测试：独立场景 R01～R07、P01～P15、L01～L04 | 用户确认 26 项全部通过；P14 瞬时投影警告已确认测试切换时序原因，用户接受当前表现、不予修复 |
+| 用户 UPM 安装、构建运行与功能复验 | 2026-11-08 用户确认正常，并授权合并；未补造自动化计数或新的环境/日志证据 |
 
 用户随后发现编辑器精确预览间歇丢失。本次修复稳定编辑对象的宿主尺寸依据，并将预览会话从瞬时 Inspector 生命周期中独立出来；新增 113 项编辑预览专项及 6 项普通 Play/全局 Play 下 Prefab 检查通过，包含实际 GPU 覆盖像素与 CPU 样点一致性、Inspector 更替不重采样、退选和退出资源清理。此批结果与上表历史 386 项分开记录；2026-11-08 用户反馈当前 P1 功能正常，不扩充 UPM 或其他环境的支持声明。
 
 精度样例中同提交 RT/CPU 逐纹素差异为 0；独立参考超过一个有效纹素 L∞ 的差异为 0。四档 120 个稳定帧无提取/回读、测得主线程分配 0 B；1000 次稳定轮询 0 B。100 次启停资源回到零基线。回读中位数约 16.4 ms、本次最大约 104.76 ms；没有固定帧数承诺。2048² RGBA32 双槽 GPU/CPU 数据上限约 64 MiB，不含其他开销。完整驱动显存峰值和 CPU 提交耗时未测。
 
-**本地 UPM 导入仍未通过**：初始工程以及使用完整工程设置/绝对包路径的新工程均在包解析器阶段报 `The "path" argument must be of type string. Received undefined`。上述源码副本结果不能表述为 UPM 安装通过，也不能替代远端安装验收。包默认资源已在源码副本中验证，UGUI 所需 Shader 变体已随代表性 Player 构建运行。
+**UPM 后续验收已由用户确认通过**：本轮提供的固定 Git 安装入口为 `db691f136199e7e6cf69b30f161c2240f71d413a`，用户随后明确反馈“UPM 安装和构建运行测试无误，功能也正常，可以进行合并”。该结果独立于上述源码副本验证。用户未另附锁文件、完整引擎版本或构建后端日志，不将反馈扩大为其他平台或特定后端的验证。
+
+早期 agent 本地 UPM 尝试曾遇到包解析器报 `The "path" argument must be of type string. Received undefined`，作为历史环境问题保留，现不再列为本次合并的未通过项。包默认资源和 UGUI 所需 Shader 变体另有既有源码副本 Player 构建运行证据。新版本发布前仍需核对最终发布提交、包版本及新标签安装入口。
 
 原 P0 工程含 Assets/本地包副本及原型材质；本轮未改动它。后续复用前须核对重复 GUID，保留其测试资产。包内正式材质沿用 Unity 已生成的 P0 材质及 meta；精确脚本使用原型 partial 的独立 GUID，旧矩形脚本和 Shader 移动保留各自 GUID。矩形 GUID 的场景/Prefab 迁移已在独立夹具工程核对，任意业务消费脚本仍须按用途迁移类型。
 
-宿主位置/旋转/缩放/外框，以及摄像机 view/projection/viewport 的代表性在途变化用例已通过同帧射线失效和恢复后画面对照；尚未证明任意脚本执行顺序、动画与自动布局组合的同帧时序。因此当前支持声明仍限于稳定宿主/观察投影，不自动扩大边界。完整矩形 Inspector/Scene 手柄回归、任意业务交互、真实 GPU 故障注入、远端安装、压缩图集、其他平台/管线/API/Unity 版本及团结尚未完成。P1 完整验收退出条件尚未满足。
+宿主位置/旋转/缩放/外框，以及摄像机 view/projection/viewport 的代表性在途变化用例已通过同帧射线失效和恢复后画面对照；尚未证明任意脚本执行顺序、动画与自动布局组合的同帧时序。因此当前支持声明仍限于稳定宿主/观察投影，不自动扩大边界。完整矩形 Inspector/Scene 手柄人工回归、任意业务交互、真实 GPU 故障注入、压缩图集、其他平台/管线/API/Unity 版本及团结未获得新增验证；用户跳过的关闭 Domain Reload 手动路线保持跳过。以上未测范围不因本次合并自动转为支持声明。
 
-P1 passed 386 automated checks across functionality, precision/resources, migration, editor previews, reload/lifecycle and scheduling, plus five actual Windows mouse clicks, in isolated source-copy projects on the environment above. The editor readback loop was fixed and retested. Local UPM import fails before compilation with a resolver error, including a retry with full project settings and an absolute package path; source-copy results do not certify UPM installation. Representative dynamic-host tests passed, but arbitrary same-frame script/layout ordering is unverified, so stable host/observer remains the declared boundary. Full acceptance, other platforms and release are pending. Version remains 2.0.0.
+P1 passed 386 automated checks across functionality, precision/resources, migration, editor previews, reload/lifecycle and scheduling, plus five actual Windows mouse clicks, in isolated source-copy projects on the environment above. On 2026-11-08, following the supplied Git URL pinned to `db691f136199e7e6cf69b30f161c2240f71d413a`, the user reported successful UPM installation, build/run and normal functionality, and authorized merging. This is user-reported acceptance, without additional lock-file or environment logs. Earlier agent-side UPM resolver failures remain historical environment observations rather than a current merge blocker. Arbitrary same-frame script/layout ordering is unverified; stable host/observer remains the declared boundary. A new version and release tag are pending; the package version remains 2.0.0.
 
 The user also confirmed all 26 numbered manual-scene cases passed. The transient P14 perspective-switch projection warning was traced to test-switch timing. The user accepted it without changing the plugin or test case and reported normal stable rendering and clicks.
 
-A later intermittent precision-preview report led to stable edit-mode host dimensions and object-owned preview sessions across Inspector replacements. Another 113 edit-preview checks and six ordinary Play/Prefab checks passed, including actual GPU coverage pixels, matching CPU samples and resource cleanup. These are separate from the historical 386 checks. On 2026-11-08, the user reported normal P1 functionality; UPM and release acceptance remain incomplete.
+A later intermittent precision-preview report led to stable edit-mode host dimensions and object-owned preview sessions across Inspector replacements. Another 113 edit-preview checks and six ordinary Play/Prefab checks passed, including actual GPU coverage pixels, matching CPU samples and resource cleanup. These are separate from the historical 386 checks. The user's later UPM/build/run confirmation does not expand the tested platform or rendering-pipeline scope.
 
 ## 单一包 / One package
 
-后续仅维护 `main`，同时维护源码和完整 UPM 包，通过正式版本标签发布。保留所有资源及文件夹的 meta，新增资源首次导入时生成并提交。不要定期删除或重建 GUID。旧版本由 `v1.0.0*` 标签及对应 GitHub Release 保留；旧开发快照由附注标签 `archive/unity-final`、`archive/tuanjie-final` 保留，非正式发行版本。`unity`、`tuanjie` 分支已删除，`#unity`、`#tuanjie` 安装链接停止使用；新安装使用正式版本标签（如 `#v2.0.0`）。
+后续仅维护 `main`，同时维护源码和完整 UPM 包，通过正式版本标签发布。保留所有资源及文件夹的 meta，新增资源首次导入时生成并提交。不要定期删除或重建 GUID。旧版本由 `v1.0.0*` 标签及对应 GitHub Release 保留；旧开发快照由附注标签 `archive/unity-final`、`archive/tuanjie-final` 保留，非正式发行版本。`unity`、`tuanjie` 分支已删除，`#unity`、`#tuanjie` 安装链接停止使用。正式发布后使用对应版本标签；当前双组件版本的固定提交入口见 README，`#v2.0.0` 仅用于旧矩形版。
 
-Maintain only `main`, whose repository root is the complete UPM package, and publish through official version tags. Commit metadata with assets and preserve GUIDs. The `v1.0.0*` tags and their GitHub Releases preserve old versions; the annotated `archive/unity-final` and `archive/tuanjie-final` tags preserve development snapshots, not official releases. The `unity` and `tuanjie` branches have been deleted. Stop using `#unity` and `#tuanjie` installation URLs; use official version tags such as `#v2.0.0` for new installations.
+Maintain only `main`, whose repository root is the complete UPM package, and publish through official version tags. Commit metadata with assets and preserve GUIDs. The `v1.0.0*` tags and their GitHub Releases preserve old versions; the annotated `archive/unity-final` and `archive/tuanjie-final` tags preserve development snapshots, not official releases. The `unity` and `tuanjie` branches have been deleted. Stop using `#unity` and `#tuanjie` installation URLs. Use the appropriate version tag after release; until then, use the pinned two-component commit in the README. The `#v2.0.0` tag installs only the old rectangle version.
 
 ## 发布步骤 / Release steps
 
